@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הרצאה של אור בטבול</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎤</text></svg>">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            direction: rtl;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 1em;
+            text-align: center;
+        }
+
+        main {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            text-align: center;
+        }
+
+        .product-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .product-card h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .product-card .price {
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+
+        .product-card button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        #cart-toggle-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            z-index: 1001; /* Ensure it's above other elements */
+        }
+
+        #cart-container {
+            position: fixed;
+            top: 60px; /* Adjusted to be below the toggle button */
+            left: 20px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 350px;
+            display: none; /* Hidden by default */
+            z-index: 1000;
+        }
+
+        #cart h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        #cart ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #cart li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        #cart li:last-child {
+            border-bottom: none;
+        }
+
+        .cart-item-details {
+            display: flex;
+            align-items: center;
+        }
+
+        .cart-item-details img {
+            width: 50px;
+            height: 50px;
+            margin-left: 10px;
+            border-radius: 4px;
+        }
+
+        .cart-item-info {
+            flex-grow: 1;
+            text-align: right;
+        }
+
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+        }
+
+        .cart-item-quantity button {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        #cart .total {
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        #checkout-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        #checkout-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+
+        #checkout-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        #checkout-form h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group input[type="number"] {
+            width: calc(100% - 12px);
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .form-actions button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+        }
+
+        .close-modal-button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #777;
+        }
+
+        #seat-selection-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1003;
+        }
+
+        .seat-selection-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .seat-selection-content h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr); /* 20 columns for seats */
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .seat {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background-color: #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.7em;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .seat.selected {
+            background-color: #28a745;
+        }
+
+        .seat.unavailable {
+            background-color: #dc3545;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .seat-info {
+            text-align: right;
+            margin-top: 15px;
+        }
+
+        .seat-info span {
+            display: inline-block;
+            margin-left: 15px;
+        }
+
+        .seat-info .legend-selected {
+            background-color: #28a745;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        .seat-info .legend-available {
+            background-color: #ccc;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        .seat-info .legend-unavailable {
+            background-color: #dc3545;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        #redirect-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            z-index: 1000;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <header>
+        <h1>אירועים בבית פאני קפלן - בית מילר</h1>
+    </header>
+
+    <button id="cart-toggle-button">הצג/הסתר עגלת קניות</button>
+
+    <main id="products-container">
+    </main>
+
+    <div id="cart-container">
+        <div id="cart">
+            <h2>עגלת קניות</h2>
+            <ul id="cart-items">
+            </ul>
+            <div class="total">סה"כ: <span id="cart-total">0.00</span> ₪</div>
+            <button id="checkout-button">מעבר לתשלום</button>
+        </div>
+    </div>
+
+    <div id="checkout-modal">
+        <form id="checkout-form">
+            <button type="button" class="close-modal-button">&times;</button>
+            <h2>פרטי תשלום</h2>
+            <div class="form-group">
+                <label for="name">שם מלא:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">אימייל:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">טלפון:</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            <div class="form-group">
+                <label for="address">כתובת:</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <div class="form-group">
+                <label for="card-number">מספר כרטיס אשראי:</label>
+                <input type="text" id="card-number" name="cardNumber" inputmode="numeric" pattern="[0-9\s]{13,19}" autocomplete="cc-number" maxlength="19" placeholder="xxxx xxxx xxxx xxxx" required>
+            </div>
+            <div class="form-group">
+                <label for="expiry-date">תאריך תפוגה (MM/YY):</label>
+                <input type="text" id="expiry-date" name="expiryDate" pattern="(0[1-9]|1[0-2])\/([0-9]{2})" placeholder="MM/YY" required>
+            </div>
+            <div class="form-group">
+                <label for="cvv">CVV:</label>
+                <input type="text" id="cvv" name="cvv" inputmode="numeric" pattern="[0-9]{3,4}" maxlength="4" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit">בצע תשלום (סימולציה)</button>
+                <button type="button" class="close-modal-button">ביטול</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="seat-selection-modal">
+        <div class="seat-selection-content">
+            <button type="button" class="close-modal-button">&times;</button>
+            <h2>בחירת מקומות</h2>
+            <div class="seats-grid" id="seats-grid">
+            </div>
+            <div class="seat-info">
+                <span class="legend-selected"></span> מקום נבחר
+                <span class="legend-available"></span> מקום פנוי
+                <span class="legend-unavailable"></span> מקום תפוס
+            </div>
+            <div class="form-actions">
+                <button id="confirm-seats-button">אישור מקומות</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="redirect-message">
+        מוזמנים לראות את שאר התוכנית שבית מילר מציעים...
+    </div>
+
+    <script>
+        // Your web app's Firebase configuration - PASTE YOUR CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlyDbpwcBcWvFnvYHb84dMEpaQFTjv-HY",
+            authDomain: "tester-69fa9.firebaseapp.com",
+            projectId: "tester-69fa9",
+            storageBucket: "tester-69fa9.firebasestorage.app",
+            messagingSenderId: "378563229004",
+            appId: "1:378563229004:web:5136b724eb84fd00e44be9",
+            measurementId: "G-BFJ1QQM3MS"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const productsContainer = document.getElementById('products-container');
+        const cartItemsList = document.getElementById('cart-items');
+        const cartTotalElement = document.getElementById('cart-total');
+        const checkoutButton = document.getElementById('checkout-button');
+        const checkoutModal = document.getElementById('checkout-modal');
+        const closeModalButtons = document.querySelectorAll('.close-modal-button');
+        const checkoutForm = document.getElementById('checkout-form');
+        const redirectMessage = document.getElementById('redirect-message');
+        const cartToggleButton = document.getElementById('cart-toggle-button');
+        const cartContainer = document.getElementById('cart-container');
+        const seatSelectionModal = document.getElementById('seat-selection-modal');
+        const seatsGrid = document.getElementById('seats-grid');
+        const confirmSeatsButton = document.getElementById('confirm-seats-button');
+
+        let cart = [];
+        let currentProductForSeatSelection = null;
+        let selectedSeatsForProduct = [];
+        let allSeats = []; // To store the state of all seats (available/unavailable)
+        let products = []; // To store products fetched from Firebase
+
+        const TOTAL_SEATS = 200; // Define the total number of seats
+
+        // --- Firebase Integration Functions ---
+
+        // Function to initialize seats in Firestore if they don't exist or if you want to reset them
+        async function initializeAllSeatsAsAvailable() {
+            console.log("Checking and initializing seats...");
+            const seatsRef = db.collection('seats');
+            const batch = db.batch();
+            let seatsExist = false;
+
+            // Check if seats already exist
+            const existingSeatsSnapshot = await seatsRef.limit(1).get();
+            if (!existingSeatsSnapshot.empty) {
+                seatsExist = true;
+                console.log("Seats already exist in Firestore. Not re-initializing.");
+            }
+
+            if (!seatsExist) {
+                console.log(`Initializing ${TOTAL_SEATS} seats as available.`);
+                for (let i = 1; i <= TOTAL_SEATS; i++) {
+                    const seatDocRef = seatsRef.doc(String(i)); // Use seat number as document ID
+                    batch.set(seatDocRef, {
+                        number: i,
+                        available: true // All seats start as available
+                    });
+                }
+                try {
+                    await batch.commit();
+                    console.log("All seats initialized as available in Firestore.");
+                } catch (error) {
+                    console.error("Error initializing seats: ", error);
+                }
+            }
+        }
+
+        // Fetch products from Firebase
+        async function fetchProducts() {
+            try {
+                const productsSnapshot = await db.collection('products').get();
+                products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderProducts();
+            } catch (error) {
+                console.error("Error fetching products: ", error);
+                alert("שגיאה בטעינת אירועים.");
+            }
+        }
+
+        // Fetch seat availability from Firebase
+        async function fetchSeats() {
+            try {
+                const seatsSnapshot = await db.collection('seats').get();
+                allSeats = seatsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sort seats by number for consistent display
+                allSeats.sort((a, b) => a.number - b.number);
+            } catch (error) {
+                console.error("Error fetching seats: ", error);
+                alert("שגיאה בטעינת סטטוס מקומות.");
+            }
+        }
+
+        // Update seat availability in Firebase
+        async function updateSeatAvailabilityInFirebase(seatIds, availableStatus) {
+            const batch = db.batch();
+            seatIds.forEach(seatId => {
+                // Ensure seatId is treated as a string for document ID lookup
+                const seatRef = db.collection('seats').doc(String(seatId));
+                batch.update(seatRef, { available: availableStatus });
+            });
+            try {
+                await batch.commit();
+                console.log(`Seat availability updated in Firebase for seats: ${seatIds.join(', ')} to ${availableStatus ? 'available' : 'unavailable'}.`);
+            } catch (error) {
+                console.error("Error updating seat availability: ", error);
+                alert("שגיאה בעדכון זמינות המקומות. נסה שוב.");
+                // Revert local changes if Firebase update fails, by re-fetching
+                await fetchSeats();
+                renderSeats();
+            }
+        }
+
+        // --- Core UI and Cart Logic ---
+
+        function renderProducts() {
+            productsContainer.innerHTML = ''; // Clear existing products
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.classList.add('product-card');
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p class="price">${product.price.toFixed(2)} ₪</p>
+                    <button class="add-to-cart" data-id="${product.id}">הוסף לעגלה</button>
+                `;
+                productsContainer.appendChild(productCard);
+            });
+        }
+
+        function updateCartDisplay() {
+            cartItemsList.innerHTML = '';
+            let total = 0;
+            cart.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <div class="cart-item-details">
+                        <img src="${item.image}" alt="${item.name}">
+                        <div class="cart-item-info">
+                            <span>${item.name}</span>
+                            <span>${item.price.toFixed(2)} ₪ ליחידה</span>
+                            ${item.selectedSeats && item.selectedSeats.length > 0 ? `<br><span>מקומות: ${item.selectedSeats.map(s => s.number).join(', ')}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button class="decrease-quantity" data-id="${item.id}" data-type="cart">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="increase-quantity" data-id="${item.id}" data-type="cart">+</button>
+                    </div>
+                    <span>סה"כ: ${(item.price * item.quantity).toFixed(2)} ₪</span>
+                `;
+                cartItemsList.appendChild(listItem);
+                total += item.price * item.quantity;
+            });
+            cartTotalElement.textContent = total.toFixed(2);
+
+            if (cart.length === 0) {
+                const emptyCartMessage = document.createElement('li');
+                emptyCartMessage.textContent = 'העגלה ריקה';
+                cartItemsList.appendChild(emptyCartMessage);
+                cartTotalElement.textContent = '0.00';
+                checkoutButton.disabled = true;
+            } else {
+                checkoutButton.disabled = false;
+            }
+        }
+
+        async function openSeatSelection(productId) {
+            currentProductForSeatSelection = products.find(p => p.id === productId);
+            selectedSeatsForProduct = []; // Reset for new selection
+
+            // Find if this product is already in the cart and has selected seats
+            const existingCartItem = cart.find(item => item.id === currentProductForSeatSelection.id);
+            if (existingCartItem && existingCartItem.selectedSeats) {
+                selectedSeatsForProduct = [...existingCartItem.selectedSeats];
+            }
+
+            await fetchSeats(); // Ensure we have the latest seat availability from Firebase
+            renderSeats();
+            seatSelectionModal.style.display = 'flex';
+        }
+
+        function renderSeats() {
+            seatsGrid.innerHTML = '';
+            // Get all seats that are currently reserved by OTHER items in the cart
+            const otherReservedSeats = new Set(
+                cart
+                    .filter(item => item.id !== currentProductForSeatSelection.id)
+                    .flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => s.id) : [])
+            );
+
+            allSeats.forEach(seat => {
+                const seatElement = document.createElement('div');
+                seatElement.classList.add('seat');
+                seatElement.textContent = seat.number;
+                seatElement.dataset.id = seat.id;
+
+                const isAlreadySelected = selectedSeatsForProduct.some(s => s.id === seat.id);
+                // A seat is unavailable if it's marked as `available: false` in Firebase,
+                // OR if it's reserved by another item in the current cart.
+                const isUnavailable = !seat.available || otherReservedSeats.has(seat.id);
+
+                if (isUnavailable) {
+                    seatElement.classList.add('unavailable');
+                } else if (isAlreadySelected) {
+                    seatElement.classList.add('selected');
+                }
+
+                seatElement.addEventListener('click', () => {
+                    if (seatElement.classList.contains('unavailable')) {
+                        return; // Cannot select unavailable seats
+                    }
+
+                    if (seatElement.classList.contains('selected')) {
+                        seatElement.classList.remove('selected');
+                        selectedSeatsForProduct = selectedSeatsForProduct.filter(s => s.id !== seat.id);
+                    } else {
+                        seatElement.classList.add('selected');
+                        selectedSeatsForProduct.push(seat);
+                    }
+                });
+                seatsGrid.appendChild(seatElement);
+            });
+        }
+
+        function addToCart(productId, selectedSeats = []) {
+            const productToAdd = products.find(p => p.id === productId);
+            let existingItemIndex = cart.findIndex(item => item.id === productToAdd.id);
+
+            // Get IDs of previously selected seats for this product (if any)
+            const previousSelectedSeatIds = existingItemIndex !== -1 && cart[existingItemIndex].selectedSeats
+                ? cart[existingItemIndex].selectedSeats.map(s => s.id) : [];
+
+            // Get IDs of newly selected seats
+            const newSelectedSeatIds = selectedSeats.map(s => s.id);
+
+            // Determine seats that were deselected (need to be made available again)
+            const deselectedSeatIds = previousSelectedSeatIds.filter(id => !newSelectedSeatIds.includes(id));
+            if (deselectedSeatIds.length > 0) {
+                updateSeatAvailabilityInFirebase(deselectedSeatIds, true);
+            }
+
+            // Determine seats that were newly selected (need to be made unavailable)
+            const newlySelectedSeatIds = newSelectedSeatIds.filter(id => !previousSelectedSeatIds.includes(id));
+            if (newlySelectedSeatIds.length > 0) {
+                updateSeatAvailabilityInFirebase(newlySelectedSeatIds, false);
+            }
+
+            // Update cart logic
+            if (selectedSeats.length > 0) {
+                if (existingItemIndex !== -1) {
+                    cart[existingItemIndex].selectedSeats = selectedSeats;
+                    cart[existingItemIndex].quantity = selectedSeats.length;
+                } else {
+                    cart.push({ ...productToAdd, quantity: selectedSeats.length, selectedSeats: selectedSeats });
+                }
+            } else {
+                // If no seats are selected but product is being added/updated (e.g., a non-seat product, or cleared seats)
+                if (existingItemIndex !== -1) {
+                    // If it previously had seats, and now has none, remove it or clear seats
+                    if (cart[existingItemIndex].selectedSeats && cart[existingItemIndex].selectedSeats.length > 0) {
+                         // If no seats selected, and it had seats previously, remove it from cart
+                        cart.splice(existingItemIndex, 1);
+                        // Seats were already released by deselectedSeatIds logic
+                    } else {
+                        cart[existingItemIndex].quantity++; // Increment for non-seat item
+                    }
+                } else {
+                    // Add new product without seats (if applicable, though current setup expects seats)
+                    cart.push({ ...productToAdd, quantity: 1, selectedSeats: [] });
+                }
+            }
+            updateCartDisplay();
+            cartContainer.style.display = 'block'; // Show cart when item is added
+        }
+
+
+        // This function needs adjustment if quantities are changed manually for seat-based items
+        function changeQuantity(productId, change, type = 'cart') {
+            const itemToUpdate = cart.find(item => item.id === parseInt(productId));
+            if (itemToUpdate) {
+                if (itemToUpdate.selectedSeats && itemToUpdate.selectedSeats.length > 0) {
+                    // For items with seat selection, direct quantity change is not allowed
+                    alert('כדי לשנות כמות עבור פריט עם מקומות, יש לבחור מחדש את המקומות דרך לחצן "הוסף לעגלה" של האירוע.');
+                    openSeatSelection(productId); // Re-open seat selection to adjust quantity via seats
+                    return;
+                }
+                // For regular items (if any, though current setup is seat-based)
+                itemToUpdate.quantity += change;
+                if (itemToUpdate.quantity < 1) {
+                    cart = cart.filter(item => item.id !== parseInt(productId));
+                }
+                updateCartDisplay();
+            }
+        }
+
+        // --- Event Listeners ---
+        productsContainer.addEventListener('click', (event) => {
+            if (event.target.classList.contains('add-to-cart')) {
+                openSeatSelection(event.target.dataset.id);
+            }
+        });
+
+        cartItemsList.addEventListener('click', (event) => {
+            if (event.target.classList.contains('increase-quantity') || event.target.classList.contains('decrease-quantity')) {
+                changeQuantity(event.target.dataset.id, event.target.classList.contains('increase-quantity') ? 1 : -1, 'cart');
+            }
+        });
+
+        checkoutButton.addEventListener('click', () => {
+            if (cart.length > 0) {
+                checkoutModal.style.display = 'flex';
+            } else {
+                alert('העגלה ריקה, לא ניתן לבצע תשלום.');
+            }
+        });
+
+        closeModalButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                checkoutModal.style.display = 'none';
+                seatSelectionModal.style.display = 'none';
+                // If closing seat selection, reset temporary selection
+                selectedSeatsForProduct = [];
+            });
+        });
+
+        checkoutForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+
+            // In a real application, you would process the payment here.
+            // For simulation, we just mark seats as unavailable and clear cart.
+
+            try {
+                // Prepare a list of all seat IDs being purchased across all items in the cart
+                const purchasedSeatsInfo = cart.flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => ({
+                    id: s.id,
+                    number: s.number,
+                    productName: item.name // Add product name for better order details
+                })) : []);
+
+                // Update seat availability in Firebase for all purchased seats (mark as unavailable)
+                const purchasedSeatIds = purchasedSeatsInfo.map(s => s.id);
+                if (purchasedSeatIds.length > 0) {
+                    await updateSeatAvailabilityInFirebase(purchasedSeatIds, false);
+                }
+
+                // Store the order in Firebase's 'orders' collection
+                await db.collection('orders').add({
+                    customerName: name,
+                    customerEmail: email,
+                    customerPhone: phone,
+                    customerAddress: address,
+                    items: cart.map(item => ({
+                        productId: item.id,
+                        productName: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        selectedSeats: item.selectedSeats ? item.selectedSeats.map(s => s.number) : [] // Store just numbers for simplicity
+                    })),
+                    totalAmount: parseFloat(cartTotalElement.textContent),
+                    orderDate: firebase.firestore.FieldValue.serverTimestamp(), // Firestore timestamp
+                    status: 'completed' // Or 'pending', 'processing' etc.
+                });
+
+                alert(`תודה לך, ${name}! הזמנתך התקבלה בהצלחה.\nסך הכל לתשלום: ${cartTotalElement.textContent}`);
+                cart = []; // Clear local cart
+                updateCartDisplay();
+                checkoutModal.style.display = 'none';
+                checkoutForm.reset();
+
+                // Display the redirect message before redirecting
+                redirectMessage.style.display = 'block';
+                setTimeout(() => {
+                    window.location.href = 'https://bmiller.co.il';
+                }, 3000); // 3000 milliseconds = 3 seconds
+
+            } catch (error) {
+                console.error("Error during checkout: ", error);
+                alert("אירעה שגיאה בתהליך התשלום. נסה שוב.");
+                // Re-fetch seats to reflect actual availability if an error occurred during commit
+                await fetchSeats();
+                renderSeats();
+            }
+        });
+
+        cartToggleButton.addEventListener('click', () => {
+            if (cartContainer.style.display === 'none') {
+                cartContainer.style.display = 'block';
+            } else {
+                cartContainer.style.display = 'none';
+            }
+        });
+
+        confirmSeatsButton.addEventListener('click', () => {
+            if (currentProductForSeatSelection) {
+                // If no seats were selected, and it was a seat-based item, maybe remove from cart
+                if (selectedSeatsForProduct.length === 0) {
+                     const confirmRemove = confirm("לא נבחרו מקומות עבור אירוע זה. האם ברצונך להסיר אותו מהעגלה?");
+                     if (confirmRemove) {
+                        cart = cart.filter(item => item.id !== currentProductForSeatSelection.id);
+                        // No seats to release if none were selected or previously selected for this item
+                     } else {
+                        return; // Don't close modal, let user select
+                     }
+                }
+                addToCart(currentProductForSeatSelection.id, selectedSeatsForProduct);
+            }
+            seatSelectionModal.style.display = 'none';
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeAllSeatsAsAvailable(); // Ensure seats are set up
+            await fetchProducts(); // Fetch products AFTER seats are potentially initialized
+            await fetchSeats(); // Fetch initial seat state
+            updateCartDisplay();
+        });
+    </script>
+</body>
+</html>
