@@ -15,7 +15,6 @@
             direction: rtl;
             overflow-x: hidden;
         }
-
         header {
             background: #222;
             color: #fff;
@@ -27,7 +26,6 @@
             border-bottom-right-radius: 16% 8%;
             box-shadow: 0 4px 24px 0 rgba(0,0,0,0.12);
         }
-
         #cart-toggle-button {
             position: fixed;
             top: 20px;
@@ -48,14 +46,12 @@
             background: #0056b3;
             transform: scale(1.04) rotate(-1deg);
         }
-
         main#products-container {
             padding: 40px 6vw 0 6vw;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 32px;
         }
-
         .product-card {
             background: #fff;
             border-radius: 24px 24px 14px 14px;
@@ -110,7 +106,6 @@
             background: #0056b3;
             transform: scale(1.05);
         }
-
         #cart-container {
             position: fixed;
             top: 80px;
@@ -226,7 +221,6 @@
             background: #0056b3;
             transform: scale(1.04);
         }
-
         #checkout-modal {
             display: none;
             position: fixed;
@@ -237,7 +231,6 @@
             z-index: 1002;
             backdrop-filter: blur(2.5px);
         }
-
         #checkout-form {
             background: #fff;
             padding: 20px 14px 22px 14px;
@@ -313,7 +306,6 @@
         .close-modal-button:hover {
             color: #28a745;
         }
-
         #seat-selection-modal {
             display: none;
             position: fixed;
@@ -418,7 +410,6 @@
             margin-left: 5px;
             border: 2px solid #dc3545;
         }
-        /* במה באמצע */
         .stage {
             grid-column: 1 / -1;
             display: flex;
@@ -438,7 +429,6 @@
             border: 3px solid #007bff;
             letter-spacing: 1.5px;
         }
-
         #confirm-seats-button {
             background: #28a745;
             color: #fff;
@@ -455,7 +445,6 @@
             background: #218838;
             transform: scale(1.04);
         }
-
         #redirect-message {
             display: none;
             position: fixed;
@@ -472,7 +461,6 @@
             text-shadow: 1px 1px 7px #22222244;
             box-shadow: 0 2px 18px 0 #2222;
         }
-
         @media (max-width: 800px) {
             main#products-container {
                 grid-template-columns: 1fr;
@@ -489,22 +477,16 @@
     <header>
         <h1>אירועים בבית פאני קפלן - בית מילר</h1>
     </header>
-
     <button id="cart-toggle-button">הצג/הסתר עגלת קניות</button>
-
-    <main id="products-container">
-    </main>
-
+    <main id="products-container"></main>
     <div id="cart-container">
         <div id="cart">
             <h2>עגלת קניות</h2>
-            <ul id="cart-items">
-            </ul>
+            <ul id="cart-items"></ul>
             <div class="total">סה"כ: <span id="cart-total">0.00</span> ₪</div>
             <button id="checkout-button">מעבר לתשלום</button>
         </div>
     </div>
-
     <div id="checkout-modal">
         <form id="checkout-form">
             <button type="button" class="close-modal-button">&times;</button>
@@ -543,14 +525,11 @@
             </div>
         </form>
     </div>
-
     <div id="seat-selection-modal">
         <div class="seat-selection-content">
             <button type="button" class="close-modal-button">&times;</button>
             <h2>בחירת מקומות</h2>
-            <div class="seats-grid" id="seats-grid">
-                <!-- הבמה תתווסף בסקריפט -->
-            </div>
+            <div class="seats-grid" id="seats-grid"></div>
             <div class="seat-info">
                 <span class="legend-selected"></span> מקום נבחר
                 <span class="legend-available"></span> מקום פנוי
@@ -561,13 +540,10 @@
             </div>
         </div>
     </div>
-
     <div id="redirect-message">
         מוזמנים לראות את שאר התוכנית שבית מילר מציעים...
     </div>
-
     <script>
-        // Your web app's Firebase configuration - PASTE YOUR CONFIG HERE
         const firebaseConfig = {
             apiKey: "AIzaSyDlyDbpwcBcWvFnvYHb84dMEpaQFTjv-HY",
             authDomain: "tester-69fa9.firebaseapp.com",
@@ -577,11 +553,8 @@
             appId: "1:378563229004:web:5136b724eb84fd00e44be9",
             measurementId: "G-BFJ1QQM3MS"
         };
-
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
         const productsContainer = document.getElementById('products-container');
         const cartItemsList = document.getElementById('cart-items');
         const cartTotalElement = document.getElementById('cart-total');
@@ -595,82 +568,108 @@
         const seatSelectionModal = document.getElementById('seat-selection-modal');
         const seatsGrid = document.getElementById('seats-grid');
         const confirmSeatsButton = document.getElementById('confirm-seats-button');
-
         let cart = [];
         let currentProductForSeatSelection = null;
         let selectedSeatsForProduct = [];
         let allSeats = [];
         let products = [];
-
         const TOTAL_SEATS = 200;
         const SEATS_PER_ROW = 20;
-        const STAGE_ROW = 0; // row after which the stage is placed (between row 5 & 6)
-
-        // --- Firebase Integration Functions ---
-
+        const STAGE_ROW = 0;
         async function initializeAllSeatsAsAvailable() {
             const seatsRef = db.collection('seats');
             const batch = db.batch();
             let seatsExist = false;
-
             const existingSeatsSnapshot = await seatsRef.limit(1).get();
-            if (!existingSeatsSnapshot.empty) {
-                seatsExist = true;
-            }
-
+            if (!existingSeatsSnapshot.empty) seatsExist = true;
             if (!seatsExist) {
                 for (let i = 1; i <= TOTAL_SEATS; i++) {
                     const seatDocRef = seatsRef.doc(String(i));
-                    batch.set(seatDocRef, {
-                        number: i,
-                        available: true
-                    });
+                    batch.set(seatDocRef, { number: i, available: true, paid: false });
                 }
-                try {
-                    await batch.commit();
-                } catch (error) {
-                    console.error("Error initializing seats: ", error);
-                }
+                try { await batch.commit(); }
+                catch (error) { console.error("Error initializing seats: ", error); }
             }
         }
-
         async function fetchProducts() {
             try {
                 const productsSnapshot = await db.collection('products').get();
                 products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderProducts();
-            } catch (error) {
-                alert("שגיאה בטעינת אירועים.");
-            }
+            } catch (error) { alert("שגיאה בטעינת אירועים."); }
         }
-
+        async function releaseExpiredHolds() {
+            const now = Date.now();
+            const seatsSnapshot = await db.collection('seats')
+                .where('available', '==', false)
+                .where('paid', '==', false)
+                .get();
+            const batch = db.batch();
+            seatsSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.heldUntil && now > data.heldUntil) {
+                    const seatRef = db.collection('seats').doc(doc.id);
+                    batch.update(seatRef, {
+                        available: true,
+                        heldUntil: firebase.firestore.FieldValue.delete(),
+                        paid: false
+                    });
+                }
+            });
+            if (!seatsSnapshot.empty) await batch.commit();
+        }
         async function fetchSeats() {
+            await releaseExpiredHolds();
             try {
                 const seatsSnapshot = await db.collection('seats').get();
                 allSeats = seatsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allSeats.sort((a, b) => a.number - b.number);
-            } catch (error) {
-                alert("שגיאה בטעינת סטטוס מקומות.");
+            } catch (error) { alert("שגיאה בטעינת סטטוס מקומות."); }
+        }
+        async function holdSeatsTemporarily(seatIds) {
+            const seatsRef = db.collection('seats');
+            const batch = db.batch();
+            const holdUntil = Date.now() + 5 * 60 * 1000;
+            seatIds.forEach(seatId => {
+                const seatRef = seatsRef.doc(String(seatId));
+                batch.update(seatRef, {
+                    available: false,
+                    heldUntil: holdUntil,
+                    paid: false
+                });
+            });
+            try { await batch.commit(); }
+            catch (error) {
+                alert("שגיאה בהחזקת המקומות. נסה שוב.");
+                await fetchSeats();
+                renderSeats();
             }
         }
-
+        async function markSeatsAsPaid(seatIds) {
+            const seatsRef = db.collection('seats');
+            const batch = db.batch();
+            seatIds.forEach(seatId => {
+                const seatRef = seatsRef.doc(String(seatId));
+                batch.update(seatRef, {
+                    paid: true,
+                    heldUntil: firebase.firestore.FieldValue.delete()
+                });
+            });
+            await batch.commit();
+        }
         async function updateSeatAvailabilityInFirebase(seatIds, availableStatus) {
             const batch = db.batch();
             seatIds.forEach(seatId => {
                 const seatRef = db.collection('seats').doc(String(seatId));
                 batch.update(seatRef, { available: availableStatus });
             });
-            try {
-                await batch.commit();
-            } catch (error) {
+            try { await batch.commit(); }
+            catch (error) {
                 alert("שגיאה בעדכון זמינות המקומות. נסה שוב.");
                 await fetchSeats();
                 renderSeats();
             }
         }
-
-        // --- Core UI and Cart Logic ---
-
         function renderProducts() {
             productsContainer.innerHTML = '';
             products.forEach(product => {
@@ -685,7 +684,6 @@
                 productsContainer.appendChild(productCard);
             });
         }
-
         function updateCartDisplay() {
             cartItemsList.innerHTML = '';
             let total = 0;
@@ -711,7 +709,6 @@
                 total += item.price * item.quantity;
             });
             cartTotalElement.textContent = total.toFixed(2);
-
             if (cart.length === 0) {
                 const emptyCartMessage = document.createElement('li');
                 emptyCartMessage.textContent = 'העגלה ריקה';
@@ -722,36 +719,28 @@
                 checkoutButton.disabled = false;
             }
         }
-
         async function openSeatSelection(productId) {
             currentProductForSeatSelection = products.find(p => p.id === productId);
             selectedSeatsForProduct = [];
-
             const existingCartItem = cart.find(item => item.id === currentProductForSeatSelection.id);
             if (existingCartItem && existingCartItem.selectedSeats) {
                 selectedSeatsForProduct = [...existingCartItem.selectedSeats];
             }
-
             await fetchSeats();
             renderSeats();
             seatSelectionModal.style.display = 'flex';
         }
-
         function renderSeats() {
             seatsGrid.innerHTML = '';
-            // Build the seats grid with a stage in the middle (after row 5)
             const otherReservedSeats = new Set(
                 cart
                     .filter(item => item.id !== currentProductForSeatSelection.id)
                     .flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => s.id) : [])
             );
-
             let seatIndex = 0;
             let insertedStage = false;
             for (let row = 0; row < Math.ceil(TOTAL_SEATS / SEATS_PER_ROW); row++) {
-                // Insert stage after STAGE_ROW
                 if (row === STAGE_ROW && !insertedStage) {
-                    // Insert the stage as a fake grid-row item
                     const stageDiv = document.createElement('div');
                     stageDiv.className = 'stage';
                     stageDiv.style.gridColumn = `1 / span ${SEATS_PER_ROW}`;
@@ -759,7 +748,6 @@
                     seatsGrid.appendChild(stageDiv);
                     insertedStage = true;
                 }
-                // Render one row
                 for (let col = 0; col < SEATS_PER_ROW; col++) {
                     if (seatIndex >= allSeats.length) break;
                     const seat = allSeats[seatIndex];
@@ -767,16 +755,13 @@
                     seatElement.classList.add('seat');
                     seatElement.textContent = seat.number;
                     seatElement.dataset.id = seat.id;
-
                     const isAlreadySelected = selectedSeatsForProduct.some(s => s.id === seat.id);
-                    const isUnavailable = !seat.available || otherReservedSeats.has(seat.id);
-
+                    const isUnavailable = !seat.available || (seat.heldUntil && Date.now() < seat.heldUntil && !seat.paid) || otherReservedSeats.has(seat.id);
                     if (isUnavailable) {
                         seatElement.classList.add('unavailable');
                     } else if (isAlreadySelected) {
                         seatElement.classList.add('selected');
                     }
-
                     seatElement.addEventListener('click', () => {
                         if (seatElement.classList.contains('unavailable')) {
                             return;
@@ -794,26 +779,16 @@
                 }
             }
         }
-
         function addToCart(productId, selectedSeats = []) {
             const productToAdd = products.find(p => p.id === productId);
             let existingItemIndex = cart.findIndex(item => item.id === productToAdd.id);
-
             const previousSelectedSeatIds = existingItemIndex !== -1 && cart[existingItemIndex].selectedSeats
                 ? cart[existingItemIndex].selectedSeats.map(s => s.id) : [];
-
             const newSelectedSeatIds = selectedSeats.map(s => s.id);
-
             const deselectedSeatIds = previousSelectedSeatIds.filter(id => !newSelectedSeatIds.includes(id));
             if (deselectedSeatIds.length > 0) {
                 updateSeatAvailabilityInFirebase(deselectedSeatIds, true);
             }
-
-            const newlySelectedSeatIds = newSelectedSeatIds.filter(id => !previousSelectedSeatIds.includes(id));
-            if (newlySelectedSeatIds.length > 0) {
-                updateSeatAvailabilityInFirebase(newlySelectedSeatIds, false);
-            }
-
             if (selectedSeats.length > 0) {
                 if (existingItemIndex !== -1) {
                     cart[existingItemIndex].selectedSeats = selectedSeats;
@@ -835,7 +810,6 @@
             updateCartDisplay();
             cartContainer.style.display = 'block';
         }
-
         function changeQuantity(productId, change, type = 'cart') {
             const itemToUpdate = cart.find(item => item.id === parseInt(productId));
             if (itemToUpdate) {
@@ -851,19 +825,16 @@
                 updateCartDisplay();
             }
         }
-
         productsContainer.addEventListener('click', (event) => {
             if (event.target.classList.contains('add-to-cart')) {
                 openSeatSelection(event.target.dataset.id);
             }
         });
-
         cartItemsList.addEventListener('click', (event) => {
             if (event.target.classList.contains('increase-quantity') || event.target.classList.contains('decrease-quantity')) {
                 changeQuantity(event.target.dataset.id, event.target.classList.contains('increase-quantity') ? 1 : -1, 'cart');
             }
         });
-
         checkoutButton.addEventListener('click', () => {
             if (cart.length > 0) {
                 checkoutModal.style.display = 'flex';
@@ -871,7 +842,6 @@
                 alert('העגלה ריקה, לא ניתן לבצע תשלום.');
             }
         });
-
         closeModalButtons.forEach(button => {
             button.addEventListener('click', () => {
                 checkoutModal.style.display = 'none';
@@ -879,26 +849,22 @@
                 selectedSeatsForProduct = [];
             });
         });
-
         checkoutForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
             const address = document.getElementById('address').value;
-
             try {
                 const purchasedSeatsInfo = cart.flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => ({
                     id: s.id,
                     number: s.number,
                     productName: item.name
                 })) : []);
-
                 const purchasedSeatIds = purchasedSeatsInfo.map(s => s.id);
                 if (purchasedSeatIds.length > 0) {
-                    await updateSeatAvailabilityInFirebase(purchasedSeatIds, false);
+                    await markSeatsAsPaid(purchasedSeatIds);
                 }
-
                 await db.collection('orders').add({
                     customerName: name,
                     customerEmail: email,
@@ -915,25 +881,21 @@
                     orderDate: firebase.firestore.FieldValue.serverTimestamp(),
                     status: 'completed'
                 });
-
                 alert(`תודה לך, ${name}! הזמנתך התקבלה בהצלחה.\nסך הכל לתשלום: ${cartTotalElement.textContent}`);
                 cart = [];
                 updateCartDisplay();
                 checkoutModal.style.display = 'none';
                 checkoutForm.reset();
-
                 redirectMessage.style.display = 'block';
                 setTimeout(() => {
                     window.location.href = 'https://bmiller.co.il';
                 }, 3000);
-
             } catch (error) {
                 alert("אירעה שגיאה בתהליך התשלום. נסה שוב.");
                 await fetchSeats();
                 renderSeats();
             }
         });
-
         cartToggleButton.addEventListener('click', () => {
             if (cartContainer.style.display === 'none') {
                 cartContainer.style.display = 'block';
@@ -941,8 +903,7 @@
                 cartContainer.style.display = 'none';
             }
         });
-
-        confirmSeatsButton.addEventListener('click', () => {
+        confirmSeatsButton.addEventListener('click', async () => {
             if (currentProductForSeatSelection) {
                 if (selectedSeatsForProduct.length === 0) {
                      const confirmRemove = confirm("לא נבחרו מקומות עבור אירוע זה. האם ברצונך להסיר אותו מהעגלה?");
@@ -951,12 +912,15 @@
                      } else {
                         return;
                      }
+                } else {
+                    const seatIds = selectedSeatsForProduct.map(s => s.id);
+                    await holdSeatsTemporarily(seatIds);
                 }
                 addToCart(currentProductForSeatSelection.id, selectedSeatsForProduct);
             }
             seatSelectionModal.style.display = 'none';
         });
-
+        setInterval(releaseExpiredHolds, 60 * 1000);
         document.addEventListener('DOMContentLoaded', async () => {
             await initializeAllSeatsAsAvailable();
             await fetchProducts();
