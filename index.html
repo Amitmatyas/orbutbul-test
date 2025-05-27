@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he">
 <head>
@@ -578,8 +577,9 @@
         const TOTAL_SEATS = 200;
         const SEATS_PER_ROW = 20;
         const STAGE_ROW = 0;
-        async function initializeAllSeatsAsAvailable() {
-            const seatsRef = db.collection('seats');
+
+        async function initializeAllSeatsAsAvailable(eventName) {
+            const seatsRef = db.collection('seats').doc(eventName).collection('seats');
             const batch = db.batch();
             let seatsExist = false;
             const existingSeatsSnapshot = await seatsRef.limit(1).get();
@@ -593,24 +593,15 @@
                 catch (error) { console.error("Error initializing seats: ", error); }
             }
         }
-        async function fetchProducts() {
-            try {
-                const productsSnapshot = await db.collection('products').get();
-                products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderProducts();
-            } catch (error) { alert("שגיאה בטעינת אירועים."); }
-        }
-        async function releaseExpiredHolds() {
+        async function releaseExpiredHolds(eventName) {
             const now = Date.now();
-            const seatsSnapshot = await db.collection('seats')
-                .where('available', '==', false)
-                .where('paid', '==', false)
-                .get();
+            const seatsRef = db.collection('seats').doc(eventName).collection('seats');
+            const seatsSnapshot = await seatsRef.where('available', '==', false).where('paid', '==', false).get();
             const batch = db.batch();
             seatsSnapshot.forEach(doc => {
                 const data = doc.data();
                 if (data.heldUntil && now > data.heldUntil) {
-                    const seatRef = db.collection('seats').doc(doc.id);
+                    const seatRef = seatsRef.doc(doc.id);
                     batch.update(seatRef, {
                         available: true,
                         heldUntil: firebase.firestore.FieldValue.delete(),
@@ -620,16 +611,17 @@
             });
             if (!seatsSnapshot.empty) await batch.commit();
         }
-        async function fetchSeats() {
-            await releaseExpiredHolds();
+        async function fetchSeats(eventName) {
+            await releaseExpiredHolds(eventName);
             try {
-                const seatsSnapshot = await db.collection('seats').get();
+                const seatsRef = db.collection('seats').doc(eventName).collection('seats');
+                const seatsSnapshot = await seatsRef.get();
                 allSeats = seatsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allSeats.sort((a, b) => a.number - b.number);
             } catch (error) { alert("שגיאה בטעינת סטטוס מקומות."); }
         }
-        async function holdSeatsTemporarily(seatIds) {
-            const seatsRef = db.collection('seats');
+        async function holdSeatsTemporarily(seatIds, eventName) {
+            const seatsRef = db.collection('seats').doc(eventName).collection('seats');
             const batch = db.batch();
             const holdUntil = Date.now() + 5 * 60 * 1000;
             seatIds.forEach(seatId => {
@@ -643,12 +635,12 @@
             try { await batch.commit(); }
             catch (error) {
                 alert("שגיאה בהחזקת המקומות. נסה שוב.");
-                await fetchSeats();
+                await fetchSeats(eventName);
                 renderSeats();
             }
         }
-        async function markSeatsAsPaid(seatIds) {
-            const seatsRef = db.collection('seats');
+        async function markSeatsAsPaid(seatIds, eventName) {
+            const seatsRef = db.collection('seats').doc(eventName).collection('seats');
             const batch = db.batch();
             seatIds.forEach(seatId => {
                 const seatRef = seatsRef.doc(String(seatId));
@@ -659,18 +651,26 @@
             });
             await batch.commit();
         }
-        async function updateSeatAvailabilityInFirebase(seatIds, availableStatus) {
+        async function updateSeatAvailabilityInFirebase(seatIds, availableStatus, eventName) {
+            const seatsRef = db.collection('seats').doc(eventName).collection('seats');
             const batch = db.batch();
             seatIds.forEach(seatId => {
-                const seatRef = db.collection('seats').doc(String(seatId));
+                const seatRef = seatsRef.doc(String(seatId));
                 batch.update(seatRef, { available: availableStatus });
             });
             try { await batch.commit(); }
             catch (error) {
                 alert("שגיאה בעדכון זמינות המקומות. נסה שוב.");
-                await fetchSeats();
+                await fetchSeats(eventName);
                 renderSeats();
             }
+        }
+        async function fetchProducts() {
+            try {
+                const productsSnapshot = await db.collection('products').get();
+                products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderProducts();
+            } catch (error) { alert("שגיאה בטעינת אירועים."); }
         }
         function renderProducts() {
             productsContainer.innerHTML = '';
@@ -728,7 +728,7 @@
             if (existingCartItem && existingCartItem.selectedSeats) {
                 selectedSeatsForProduct = [...existingCartItem.selectedSeats];
             }
-            await fetchSeats();
+            await fetchSeats(currentProductForSeatSelection.name);
             renderSeats();
             seatSelectionModal.style.display = 'flex';
         }
@@ -789,7 +789,7 @@
             const newSelectedSeatIds = selectedSeats.map(s => s.id);
             const deselectedSeatIds = previousSelectedSeatIds.filter(id => !newSelectedSeatIds.includes(id));
             if (deselectedSeatIds.length > 0) {
-                updateSeatAvailabilityInFirebase(deselectedSeatIds, true);
+                updateSeatAvailabilityInFirebase(deselectedSeatIds, true, productToAdd.name);
             }
             if (selectedSeats.length > 0) {
                 if (existingItemIndex !== -1) {
@@ -813,7 +813,7 @@
             cartContainer.style.display = 'block';
         }
         function changeQuantity(productId, change, type = 'cart') {
-            const itemToUpdate = cart.find(item => item.id === parseInt(productId));
+            const itemToUpdate = cart.find(item => item.id === productId);
             if (itemToUpdate) {
                 if (itemToUpdate.selectedSeats && itemToUpdate.selectedSeats.length > 0) {
                     alert('כדי לשנות כמות עבור פריט עם מקומות, יש לבחור מחדש את המקומות דרך לחצן "הוסף לעגלה" של האירוע.');
@@ -822,7 +822,7 @@
                 }
                 itemToUpdate.quantity += change;
                 if (itemToUpdate.quantity < 1) {
-                    cart = cart.filter(item => item.id !== parseInt(productId));
+                    cart = cart.filter(item => item.id !== productId);
                 }
                 updateCartDisplay();
             }
@@ -858,14 +858,11 @@
             const phone = document.getElementById('phone').value;
             const address = document.getElementById('address').value;
             try {
-                const purchasedSeatsInfo = cart.flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => ({
-                    id: s.id,
-                    number: s.number,
-                    productName: item.name
-                })) : []);
-                const purchasedSeatIds = purchasedSeatsInfo.map(s => s.id);
-                if (purchasedSeatIds.length > 0) {
-                    await markSeatsAsPaid(purchasedSeatIds);
+                for (const item of cart) {
+                    if (item.selectedSeats && item.selectedSeats.length > 0) {
+                        const seatIds = item.selectedSeats.map(s => s.id);
+                        await markSeatsAsPaid(seatIds, item.name);
+                    }
                 }
                 await db.collection('orders').add({
                     customerName: name,
@@ -894,7 +891,9 @@
                 }, 3000);
             } catch (error) {
                 alert("אירעה שגיאה בתהליך התשלום. נסה שוב.");
-                await fetchSeats();
+                for (const item of cart) {
+                    await fetchSeats(item.name);
+                }
                 renderSeats();
             }
         });
@@ -916,17 +915,22 @@
                      }
                 } else {
                     const seatIds = selectedSeatsForProduct.map(s => s.id);
-                    await holdSeatsTemporarily(seatIds);
+                    await holdSeatsTemporarily(seatIds, currentProductForSeatSelection.name);
                 }
                 addToCart(currentProductForSeatSelection.id, selectedSeatsForProduct);
             }
             seatSelectionModal.style.display = 'none';
         });
-        setInterval(releaseExpiredHolds, 60 * 1000);
+        setInterval(async () => {
+            for (const product of products) {
+                await releaseExpiredHolds(product.name);
+            }
+        }, 60 * 1000);
         document.addEventListener('DOMContentLoaded', async () => {
-            await initializeAllSeatsAsAvailable();
             await fetchProducts();
-            await fetchSeats();
+            for (const product of products) {
+                await initializeAllSeatsAsAvailable(product.name);
+            }
             updateCartDisplay();
         });
     </script>
