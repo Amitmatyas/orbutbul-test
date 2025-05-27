@@ -158,38 +158,50 @@
 
     // ---- FETCH SEATS AND ORDERS ----
     async function loadSeatsAndOrders() {
-        // Get products (assuming only one product/event, can be extended)
-        const productsSnapshot = await db.collection('products').get();
-        if (productsSnapshot.empty) return;
-        const productDoc = productsSnapshot.docs[0];
-        const productId = productDoc.id;
-
-        // 1. Fetch seats
-        const seatsSnapshot = await db.collection('products').doc(productId).collection('seats').get();
-        allSeats = seatsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-
-        // 2. Fetch orders and create map seatId->order
-        seatOrderMap = {};
-        const ordersSnapshot = await db.collection('orders').get();
-        ordersSnapshot.forEach(doc => {
-            const order = doc.data();
-            if (order.items) {
-                order.items.forEach(item => {
-                    if (item.selectedSeats) {
-                        item.selectedSeats.forEach(seatNumOrObj => {
-                            // seatNumOrObj can be number or {id, number}
-                            let seatId = seatNumOrObj.id ? String(seatNumOrObj.id) : String(seatNumOrObj);
-                            seatOrderMap[seatId] = {
-                                name: order.customerName || "לא ידוע",
-                                email: order.customerEmail || "לא ידוע",
-                                date: order.orderDate ? new Date(order.orderDate.toDate()).toLocaleString('he-IL') : "לא ידוע"
-                            };
-                        });
-                    }
-                });
+        try {
+            // שליפת מוצר ראשון (אפשר לשפר לתמיכה ביותר ממוצר אחד)
+            const productsSnapshot = await db.collection('products').get();
+            if (productsSnapshot.empty) {
+                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו מוצרים</div>';
+                return;
             }
-        });
-        renderSeats();
+            const productDoc = productsSnapshot.docs[0];
+            const productId = productDoc.id;
+
+            // שליפת כיסאות
+            const seatsSnapshot = await db.collection('products').doc(productId).collection('seats').get();
+            if (seatsSnapshot.empty) {
+                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו כיסאות</div>';
+                return;
+            }
+            allSeats = seatsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+
+            // שליפת הזמנות ומיפוי של seatId -> order
+            seatOrderMap = {};
+            const ordersSnapshot = await db.collection('orders').get();
+            ordersSnapshot.forEach(doc => {
+                const order = doc.data();
+                if (order.items) {
+                    order.items.forEach(item => {
+                        if (item.selectedSeats) {
+                            item.selectedSeats.forEach(seatNumOrObj => {
+                                let seatId = seatNumOrObj.id ? String(seatNumOrObj.id) : String(seatNumOrObj);
+                                seatOrderMap[seatId] = {
+                                    name: order.customerName || "לא ידוע",
+                                    email: order.customerEmail || "לא ידוע",
+                                    date: order.orderDate && order.orderDate.toDate ? new Date(order.orderDate.toDate()).toLocaleString('he-IL') : "לא ידוע"
+                                };
+                            });
+                        }
+                    });
+                }
+            });
+
+            renderSeats();
+        } catch (e) {
+            seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">שגיאה בטעינה</div>';
+            console.error('שגיאה בטעינת הכיסאות או ההזמנות:', e);
+        }
     }
 
     // ---- RENDER SEATS ----
