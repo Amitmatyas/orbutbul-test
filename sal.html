@@ -860,64 +860,69 @@
             renderSeats();
             seatSelectionModal.style.display = 'flex';
         }
-        function renderSeats() {
-            seatsGrid.innerHTML = '';
-            const otherReservedSeats = new Set(
-                cart
-                    .filter(item => item.id !== currentProductForSeatSelection.id)
-                    .flatMap(item => item.selectedSeats ? item.selectedSeats.map(s => s.id) : [])
-            );
-            let seatIndex = 0;
-            let insertedStage = false;
-            for (let row = 0; row < Math.ceil(TOTAL_SEATS / SEATS_PER_ROW); row++) {
-                if (row === STAGE_ROW && !insertedStage) {
-                    const stageDiv = document.createElement('div');
-                    stageDiv.className = 'stage';
-                    stageDiv.style.gridColumn = `1 / span ${SEATS_PER_ROW}`;
-                    stageDiv.innerHTML = '<div class="stage-rect">במה</div>';
-                    seatsGrid.appendChild(stageDiv);
-                    insertedStage = true;
-                }
-                for (let col = 0; col < SEATS_PER_ROW; col++) {
-                    if (seatIndex >= allSeats.length) break;
-                    const seat = allSeats[seatIndex];
-                    const seatElement = document.createElement('div');
-                    seatElement.classList.add('seat');
-                    seatElement.textContent = seat.number;
-                    seatElement.dataset.id = seat.id;
-                    const isAlreadySelected = selectedSeatsForProduct.some(s => s.id === seat.id);
-                    const isUnavailable = !seat.available || (seat.heldUntil && Date.now() < seat.heldUntil && !seat.paid) || otherReservedSeats.has(seat.id);
-                    if (isUnavailable) {
-                        seatElement.classList.add('unavailable');
-                    } else if (isAlreadySelected) {
-                        seatElement.classList.add('selected');
-                    }
-                    seatElement.addEventListener('click', async () => {
-                        if (seatElement.classList.contains('unavailable')) return;
-                        if (seatElement.classList.contains('selected')) {
-                            seatElement.classList.remove('selected');
-                            selectedSeatsForProduct = selectedSeatsForProduct.filter(s => s.id !== seat.id);
-                            // אם המושב היה בעגלה כבר (כלומר, אחרי אישור), נעדכן גם ב-Firebase וגם בעגלה
-                            const item = cart.find(i => i.id === currentProductForSeatSelection.id && i.selectedSeats && i.selectedSeats.some(s => s.id === seat.id));
-                            if (item) {
-                                await updateSeatAvailabilityInFirebase([seat.id], true);
-                                item.selectedSeats = item.selectedSeats.filter(s => s.id !== seat.id);
-                                item.quantity = item.selectedSeats.length;
-                                if (item.quantity === 0) {
-                                    cart = cart.filter(i => i.id !== item.id);
-                                }
-                                updateCartDisplay();
-                            }
-                        } else {
-                            seatElement.classList.add('selected');
-                            selectedSeatsForProduct.push(seat);
-                        }
-                    });
-                    seatsGrid.appendChild(seatElement);
-                    seatIndex++;
-                }
-            }
+// ======= בלוק חדש =======
+function renderSeats() {
+    seatsGrid.innerHTML = '';
+    const myProductId = currentProductForSeatSelection?.id;
+    // כל המושבים שאני בחרתי (גם אם הם תפוסים במסד)
+    const mySeats = cart.find(item => item.id === myProductId)?.selectedSeats?.map(s=>s.id) || [];
+
+    let seatIndex = 0;
+    let insertedStage = false;
+    for (let row = 0; row < Math.ceil(TOTAL_SEATS / SEATS_PER_ROW); row++) {
+        if (row === STAGE_ROW && !insertedStage) {
+            const stageDiv = document.createElement('div');
+            stageDiv.className = 'stage';
+            stageDiv.style.gridColumn = `1 / span ${SEATS_PER_ROW}`;
+            stageDiv.innerHTML = '<div class="stage-rect">במה</div>';
+            seatsGrid.appendChild(stageDiv);
+            insertedStage = true;
         }
+        for (let col = 0; col < SEATS_PER_ROW; col++) {
+            if (seatIndex >= allSeats.length) break;
+            const seat = allSeats[seatIndex];
+            const seatElement = document.createElement('div');
+            seatElement.classList.add('seat');
+            seatElement.textContent = seat.number;
+            seatElement.dataset.id = seat.id;
+
+            const isMySelected = mySeats.includes(seat.id);
+            // תפוס ע"י אחר = לא זמין, אבל תמיד נוכל להוריד את שלנו
+            const isUnavailable = (!seat.available || (seat.heldUntil && Date.now() < seat.heldUntil && !seat.paid)) && !isMySelected;
+
+            if (isUnavailable) {
+                seatElement.classList.add('unavailable');
+            } else if (isMySelected) {
+                seatElement.classList.add('selected');
+            }
+
+            seatElement.addEventListener('click', async () => {
+                if (seatElement.classList.contains('unavailable')) return;
+                if (seatElement.classList.contains('selected')) {
+                    seatElement.classList.remove('selected');
+                    selectedSeatsForProduct = selectedSeatsForProduct.filter(s => s.id !== seat.id);
+                    // שחרור מקום במסד ובעגלה
+                    await updateSeatAvailabilityInFirebase([seat.id], true);
+                    const item = cart.find(i => i.id === myProductId);
+                    if (item && item.selectedSeats) {
+                        item.selectedSeats = item.selectedSeats.filter(s => s.id !== seat.id);
+                        item.quantity = item.selectedSeats.length;
+                        if (item.quantity === 0) {
+                            cart = cart.filter(i => i.id !== item.id);
+                        }
+                        updateCartDisplay();
+                    }
+                } else {
+                    seatElement.classList.add('selected');
+                    selectedSeatsForProduct.push(seat);
+                    await holdSeatsTemporarily([seat.id]);
+                }
+            });
+            seatsGrid.appendChild(seatElement);
+            seatIndex++;
+        }
+    }
+}
         function addToCart(productId, selectedSeats = []) {
             const productToAdd = products.find(p => p.id === productId);
             let existingItemIndex = cart.findIndex(item => item.id === productToAdd.id);
