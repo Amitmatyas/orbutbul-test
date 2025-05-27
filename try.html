@@ -1048,18 +1048,28 @@
             await fetchSeats();
             updateCartDisplay();
         });
+// משתנה גלובלי לשמירת מזהה המוצר של המודל
+const modalAddToCartBtn = document.getElementById('modal-add-to-cart');
+let currentModalProductId = null;
 
-        // Product modal logic
-        function openProductModal(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-            modalProductImage.src = product.image;
-            modalProductImage.alt = product.name;
-            modalProductTitle.textContent = product.name;
-            modalProductPrice.textContent = `${product.price.toFixed(2)} ₪`;
-            modalProductDescription.textContent = product.description ? product.description : '';
-            productModal.style.display = 'flex';
-        }
+// עדכון מזהה המוצר בעת פתיחת המודל
+function openProductModal(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    modalProductImage.src = product.image;
+    modalProductImage.alt = product.name;
+    modalProductTitle.textContent = product.name;
+    modalProductPrice.textContent = `${product.price.toFixed(2)} ₪`;
+    modalProductDescription.textContent = product.description ? product.description : '';
+    productModal.style.display = 'flex';
+    currentModalProductId = product.id; // שמירת מזהה המוצר למודל
+}
+
+// האזנה ללחיצה על "הוסף לעגלה" במודל
+modalAddToCartBtn.addEventListener('click', function() {
+    openSeatSelection(currentModalProductId); // בדיוק כמו בכפתור של הכרטיס
+    productModal.style.display = 'none'; // סגירת המודל
+});
         function closeProductModal() {
             productModal.style.display = 'none';
         }
