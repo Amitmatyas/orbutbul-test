@@ -931,21 +931,21 @@
             updateCartDisplay();
             cartContainer.style.display = 'block';
         }
-        function changeQuantity(productId, change, type = 'cart') {
-            const itemToUpdate = cart.find(item => item.id === parseInt(productId));
-            if (itemToUpdate) {
-                if (itemToUpdate.selectedSeats && itemToUpdate.selectedSeats.length > 0) {
-                    alert('כדי לשנות כמות עבור פריט עם מקומות, יש לבחור מחדש את המקומות דרך לחצן "הוסף לעגלה" של האירוע.');
-                    openSeatSelection(productId);
-                    return;
-                }
-                itemToUpdate.quantity += change;
-                if (itemToUpdate.quantity < 1) {
-                    cart = cart.filter(item => item.id !== parseInt(productId));
-                }
-                updateCartDisplay();
-            }
+function changeQuantity(productId, change, type = 'cart') {
+    const itemToUpdate = cart.find(item => String(item.id) === String(productId));
+    if (itemToUpdate) {
+        if (itemToUpdate.selectedSeats && itemToUpdate.selectedSeats.length > 0) {
+            alert('כדי לשנות כמות עבור פריט עם מקומות, יש לבחור מחדש את המקומות דרך לחצן "הוסף לעגלה" של האירוע.');
+            openSeatSelection(productId);
+            return;
         }
+        itemToUpdate.quantity += change;
+        if (itemToUpdate.quantity < 1) {
+            cart = cart.filter(item => String(item.id) !== String(productId));
+        }
+        updateCartDisplay();
+    }
+}
         productsContainer.addEventListener('click', (event) => {
             if (event.target.classList.contains('add-to-cart')) {
                 openSeatSelection(event.target.dataset.id);
