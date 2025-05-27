@@ -318,6 +318,7 @@
             color: #555;
         }
     </style>
+    <!-- Firebase compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
@@ -392,20 +393,20 @@
     </div>
 
     <script>
-        // Firebase config
+        // קונפיגורציה של Firebase
         const firebaseConfig = {
-        apiKey: "AIzaSyDLHENaXTeorjL87sExB1EJrH7mrEnNYOA",
-        authDomain: "timetable-titus.firebaseapp.com",
-        projectId: "timetable-titus",
-        storageBucket: "timetable-titus.firebasestorage.app",
-        messagingSenderId: "199146911555",
-        appId: "1:199146911555:web:5d9436d716dfc6de7361f6",
-        measurementId: "G-JQ02VEC325"
+            apiKey: "AIzaSyDLHENaXTeorjL87sExB1EJrH7mrEnNYOA",
+            authDomain: "timetable-titus.firebaseapp.com",
+            projectId: "timetable-titus",
+            storageBucket: "timetable-titus.appspot.com",
+            messagingSenderId: "199146911555",
+            appId: "1:199146911555:web:5d9436d716dfc6de7361f6",
+            measurementId: "G-JQ02VEC325"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // DOM elements
+        // משתני DOM
         const addProductForm = document.getElementById('add-product-form');
         const productNameInput = document.getElementById('product-name');
         const productDescriptionInput = document.getElementById('product-description');
@@ -429,7 +430,7 @@
         const loginErrorMessage = document.getElementById('login-error-message');
         const adminPanelContent = document.getElementById('admin-panel-content');
 
-        // Simple "Authentication"
+        // "אימות" פשוט
         const ADMIN_USERNAME = 'Bmiller';
         const ADMIN_PASSWORD = 'Bmiller123';
 
@@ -448,7 +449,7 @@
             }
         });
 
-        // Add product
+        // הוספת מוצר
         addProductForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = productNameInput.value.trim();
@@ -478,7 +479,7 @@
             }
         });
 
-        // Fetch and display products
+        // טעינת מוצרים
         async function fetchProducts() {
             productsList.innerHTML = '<p>טוען מוצרים...</p>';
             try {
@@ -494,7 +495,6 @@
                     const card = document.createElement('div');
                     card.classList.add('product-card');
 
-                    // Not editing
                     card.innerHTML = `
                         <img src="${product.image}" alt="${product.name}">
                         <div class="product-details">
@@ -507,7 +507,8 @@
                             <button class="edit-btn">ערוך</button>
                         </div>
                     `;
-                    // Editing state (hidden by default, shown when editing)
+
+                    // טופס עריכה (מוסתר כברירת מחדל)
                     const editForm = document.createElement('form');
                     editForm.style.display = 'none';
                     editForm.innerHTML = `
@@ -534,7 +535,7 @@
                     `;
                     card.appendChild(editForm);
 
-                    // Handlers
+                    // אירועים לעריכה
                     const editBtn = card.querySelector('.edit-btn');
                     const productDetailsDiv = card.querySelector('.product-details');
                     editBtn.addEventListener('click', () => {
@@ -583,7 +584,7 @@
             }
         }
 
-        // Fetch and display orders (no change)
+        // טעינת הזמנות
         async function fetchOrders() {
             ordersList.innerHTML = '<p>טוען הזמנות...</p>';
             try {
@@ -617,7 +618,7 @@
             }
         }
 
-        // Show order details modal (no change)
+        // הצגת פרטי הזמנה במודאל
         function showOrderDetails(order) {
             modalCustomerName.textContent = order.customerName || 'לא ידוע';
             modalCustomerEmail.textContent = order.customerEmail || 'לא ידוע';
@@ -648,7 +649,7 @@
             orderDetailsModal.style.display = 'flex';
         }
 
-        // Close Modal
+        // סגירת מודאל
         modalCloseButton.addEventListener('click', () => {
             orderDetailsModal.style.display = 'none';
         });
@@ -658,9 +659,8 @@
             }
         });
 
-        // Initial load
         document.addEventListener('DOMContentLoaded', () => {
-            // By default, body is set to flex in CSS to center the login form.
+            // centering נטען מה-CSS
         });
     </script>
 </body>
