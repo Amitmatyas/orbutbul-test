@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>מפת כיסאות למנהל</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6fa;
+            color: #222;
+            direction: rtl;
+            padding: 40px 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px #0001;
+            padding: 32px 18px;
+        }
+        h1 {
+            margin-bottom: 15px;
+            color: #1479ff;
+            text-align: center;
+        }
+        .legend {
+            margin-bottom: 24px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 18px; height: 18px; border-radius: 50%; display: inline-block;
+            border: 2px solid #fff;
+        }
+        .legend-red { background: #dc3545; border-color: #dc3545; }
+        .legend-grey { background: #ccc; border-color: #aaa;}
+        .legend-green { background: #28a745; border-color: #28a745; }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            gap: 7px;
+            justify-items: center;
+            margin: 0 auto 32px auto;
+            background: transparent;
+        }
+        .seat {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #ccc; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.95em; cursor: pointer;
+            border: 2px solid #fff; transition: box-shadow 0.15s, transform 0.13s;
+            box-shadow: 0 0 0px #0000;
+        }
+        .seat.red { background: #dc3545; border-color: #dc3545; color: #fff; cursor: pointer;}
+        .seat.grey { background: #ccc; border-color: #aaa; color: #555; cursor: pointer; }
+        .seat.green { background: #28a745; border-color: #28a745; color: #fff; cursor: pointer;}
+        .seat:hover { box-shadow: 0 2px 12px #007bff33; transform: scale(1.09);}
+        .stage {
+            grid-column: 1 / span 20;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .stage-rect {
+            background: #222;
+            color: #fff;
+            padding: 6px 0;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.1em;
+            width: 100%;
+            margin: 0 auto 13px auto;
+        }
+        /* Modal */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: #0007;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-bg.active { display: flex; }
+        .modal-content {
+            background: #fff;
+            border-radius: 10px;
+            padding: 32px 28px;
+            direction: rtl;
+            min-width: 260px;
+            min-height: 140px;
+            box-shadow: 0 4px 22px #0002;
+            position: relative;
+        }
+        .modal-content h2 { margin: 0 0 15px 0; color: #1479ff;}
+        .modal-content p { margin: 8px 0; font-size: 1.05em;}
+        .modal-content .close-btn {
+            position: absolute;
+            left: 18px; top: 14px;
+            background: none; border: none; font-size: 1.4em; cursor: pointer; color: #888;
+        }
+        .modal-content .close-btn:hover { color: #dc3545; }
+        .seat[disabled] { opacity: 0.3; pointer-events: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>מפת הכיסאות - מנהל</h1>
+    <div class="legend">
+        <span><span class="legend-dot legend-red"></span>נקנה</span>
+        <span><span class="legend-dot legend-grey"></span>תפוס (לא נקנה)</span>
+        <span><span class="legend-dot legend-green"></span>פנוי</span>
+    </div>
+    <div class="seat-grid" id="seat-grid"></div>
+</div>
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg">
+    <div class="modal-content" id="modal-content">
+        <button class="close-btn" id="close-modal">&times;</button>
+        <div id="modal-details"></div>
+    </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+    // ----- CONFIGURE YOUR FIREBASE -----
+    var firebaseConfig = {
+        apiKey: "AIzaSyBGQzvGk2d1bR6wVwX6jvU_RnQ9kUo7yqI",
+        authDomain: "your-app.firebaseapp.com",
+        projectId: "orbutbul-test",
+        storageBucket: "your-app.appspot.com",
+        messagingSenderId: "199146911555",
+        appId: "1:199146911555:web:5d9436d716dfc6de7361f6",
+        measurementId: "G-JQ02VEC325"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ---- SETTINGS ----
+    const TOTAL_SEATS = 200;
+    const SEATS_PER_ROW = 20;
+    const STAGE_ROW = 0;
+
+    // ---- DOM ----
+    const seatGrid = document.getElementById('seat-grid');
+    const modalBg = document.getElementById('modal-bg');
+    const modalDetails = document.getElementById('modal-details');
+    const closeModalBtn = document.getElementById('close-modal');
+
+    // ---- STATE ----
+    let allSeats = []; // [{id, number, paid, available, heldUntil, orderId}]
+    let seatOrderMap = {}; // seatId -> orderData
+
+    // ---- FETCH SEATS AND ORDERS ----
+    async function loadSeatsAndOrders() {
+        // Get products (assuming only one product/event, can be extended)
+        const productsSnapshot = await db.collection('products').get();
+        if (productsSnapshot.empty) return;
+        const productDoc = productsSnapshot.docs[0];
+        const productId = productDoc.id;
+
+        // 1. Fetch seats
+        const seatsSnapshot = await db.collection('products').doc(productId).collection('seats').get();
+        allSeats = seatsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+
+        // 2. Fetch orders and create map seatId->order
+        seatOrderMap = {};
+        const ordersSnapshot = await db.collection('orders').get();
+        ordersSnapshot.forEach(doc => {
+            const order = doc.data();
+            if (order.items) {
+                order.items.forEach(item => {
+                    if (item.selectedSeats) {
+                        item.selectedSeats.forEach(seatNumOrObj => {
+                            // seatNumOrObj can be number or {id, number}
+                            let seatId = seatNumOrObj.id ? String(seatNumOrObj.id) : String(seatNumOrObj);
+                            seatOrderMap[seatId] = {
+                                name: order.customerName || "לא ידוע",
+                                email: order.customerEmail || "לא ידוע",
+                                date: order.orderDate ? new Date(order.orderDate.toDate()).toLocaleString('he-IL') : "לא ידוע"
+                            };
+                        });
+                    }
+                });
+            }
+        });
+        renderSeats();
+    }
+
+    // ---- RENDER SEATS ----
+    function renderSeats() {
+        seatGrid.innerHTML = '';
+        let seatIndex = 0;
+        let insertedStage = false;
+        for (let row = 0; row < Math.ceil(TOTAL_SEATS / SEATS_PER_ROW); row++) {
+            if (row === STAGE_ROW && !insertedStage) {
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'stage';
+                stageDiv.style.gridColumn = `1 / span ${SEATS_PER_ROW}`;
+                stageDiv.innerHTML = '<div class="stage-rect">במה</div>';
+                seatGrid.appendChild(stageDiv);
+                insertedStage = true;
+            }
+            for (let col = 0; col < SEATS_PER_ROW; col++) {
+                if (seatIndex >= allSeats.length) break;
+                const seat = allSeats[seatIndex];
+                const seatEl = document.createElement('div');
+                seatEl.classList.add('seat');
+                seatEl.textContent = seat.number;
+                // קביעת צבע
+                if (seat.paid) {
+                    seatEl.classList.add('red');
+                } else if (!seat.available || (seat.heldUntil && Date.now() < seat.heldUntil && !seat.paid)) {
+                    seatEl.classList.add('grey');
+                } else {
+                    seatEl.classList.add('green');
+                }
+                // אירוע קליק
+                seatEl.addEventListener('click', () => showSeatDetails(seat));
+                seatGrid.appendChild(seatEl);
+                seatIndex++;
+            }
+        }
+    }
+
+    // ---- הצגת פרטי מושב ----
+    function showSeatDetails(seat) {
+        const order = seatOrderMap[String(seat.id)];
+        modalDetails.innerHTML = '';
+        if (order) {
+            modalDetails.innerHTML = `
+                <h2>פרטי ההזמנה</h2>
+                <p><strong>שם:</strong> ${order.name}</p>
+                <p><strong>אימייל:</strong> ${order.email}</p>
+                <p><strong>תאריך קנייה/תפיסה:</strong> ${order.date}</p>
+            `;
+        } else if (!seat.available) {
+            modalDetails.innerHTML = `<h2>מושב תפוס (לא נקנה)</h2><p>אין פרטי הזמנה זמינים.</p>`;
+        } else {
+            modalDetails.innerHTML = `<h2>מושב פנוי</h2><p>אין פרטי הזמנה.</p>`;
+        }
+        modalBg.classList.add('active');
+    }
+    closeModalBtn.onclick = () => modalBg.classList.remove('active');
+    modalBg.onclick = (e) => { if (e.target === modalBg) modalBg.classList.remove('active'); };
+
+    // ---- INIT ----
+    loadSeatsAndOrders();
+</script>
+</body>
+</html>
