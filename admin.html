@@ -51,6 +51,22 @@
         }
         h1, h2 { text-align: center; color: #333; }
         section { margin-bottom: 45px; }
+        /* ===== בורר אירועים ===== */
+        #event-selector-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 10px;
+        }
+        #event-selector {
+            font-size: 1.11em;
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            direction: rtl;
+        }
         /* ===== מפת כיסאות ===== */
         .legend {
             margin-bottom: 24px;
@@ -164,10 +180,13 @@
     </div>
     <div class="container" id="admin-panel-content" style="display: none;">
         <h1>פאנל ניהול</h1>
-
         <!-- 1. מפת כיסאות -->
         <section id="seats-map-section">
             <h2>מפת הכיסאות</h2>
+            <div id="event-selector-container" style="display:none;">
+                <label for="event-selector">בחר אירוע:</label>
+                <select id="event-selector"></select>
+            </div>
             <div class="legend">
                 <span><span class="legend-dot legend-red"></span>נקנה</span>
                 <span><span class="legend-dot legend-grey"></span>תפוס (לא נקנה)</span>
@@ -243,7 +262,7 @@
     </div>
 
     <script>
-    // ================== Firebase Config (שני SDKs עובדים על אותו פרויקט) ==================
+    // ================== Firebase Config ==================
     const firebaseConfig = {
         apiKey: "AIzaSyDLHENaXTeorjL87sExB1EJrH7mrEnNYOA",
         authDomain: "timetable-titus.firebaseapp.com",
@@ -274,7 +293,7 @@
             document.body.style.justifyContent = 'flex-start';
             document.body.style.alignItems = 'flex-start';
             adminPanelContent.style.display = 'block';
-            loadSeatsAndOrders();
+            loadEventsAndInitSeats(); // חדש - טוען אירועים ואז מושבים
             fetchProducts();
             fetchOrders();
         } else {
@@ -283,28 +302,65 @@
         }
     });
 
-    // ================== 1. מפת כיסאות (grid-seat) ==================
+    // ========== 1. בורר אירועים ומפת כיסאות ==========
     const TOTAL_SEATS = 200, SEATS_PER_ROW = 20, STAGE_ROW = 0;
     const seatGrid = document.getElementById('seat-grid');
     const statsDiv = document.getElementById('seat-stats');
     const modalBg = document.getElementById('modal-bg');
     const modalDetails = document.getElementById('modal-details');
     const closeModalBtn = document.getElementById('close-modal');
+    const eventSelectorContainer = document.getElementById('event-selector-container');
+    const eventSelector = document.getElementById('event-selector');
 
     let seatNumberMap = {}, seatOrderMap = {}, seatsArr = [];
+    let eventsArr = [], selectedEventId = null;
 
-    async function loadSeatsAndOrders() {
+    async function loadEventsAndInitSeats() {
+        // טען את כל האירועים (מסמכי products)
         try {
             const productsSnapshot = await db8.collection('products').get();
-            if (productsSnapshot.empty) {
-                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו מוצרים</div>'; return;
+            eventsArr = productsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+            if (eventsArr.length === 0) {
+                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו אירועים</div>';
+                statsDiv.innerHTML = '';
+                eventSelectorContainer.style.display = 'none';
+                return;
             }
-            const productDoc = productsSnapshot.docs[0];
-            const productId = productDoc.id;
+            // אם יש אירוע אחד בלבד - אין בורר אירועים
+            if (eventsArr.length === 1) {
+                selectedEventId = eventsArr[0].id;
+                eventSelectorContainer.style.display = 'none';
+                loadSeatsAndOrdersForEvent(selectedEventId);
+            } else {
+                // יש מספר אירועים - הצג בורר אירועים
+                eventSelector.innerHTML = eventsArr.map(ev =>
+                    `<option value="${ev.id}">${ev.name || ev.title || 'אירוע ללא שם'} (${ev.id})</option>`
+                ).join('');
+                eventSelectorContainer.style.display = '';
+                // ברירת מחדל: הראשון
+                selectedEventId = eventSelector.value = eventsArr[0].id;
+                loadSeatsAndOrdersForEvent(selectedEventId);
+            }
+        } catch (e) {
+            seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">שגיאה בטעינת האירועים</div>';
+            statsDiv.innerHTML = '';
+            eventSelectorContainer.style.display = 'none';
+        }
+    }
+
+    eventSelector.addEventListener('change', () => {
+        selectedEventId = eventSelector.value;
+        loadSeatsAndOrdersForEvent(selectedEventId);
+    });
+
+    async function loadSeatsAndOrdersForEvent(eventId) {
+        seatGrid.innerHTML = '<div style="grid-column:1/span 20;">טוען...</div>';
+        statsDiv.innerHTML = '';
+        try {
             // כיסאות
-            const seatsSnapshot = await db8.collection('products').doc(productId).collection('seats').get();
+            const seatsSnapshot = await db8.collection('products').doc(eventId).collection('seats').get();
             if (seatsSnapshot.empty) {
-                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו כיסאות</div>'; return;
+                seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">לא נמצאו כיסאות לאירוע זה</div>'; return;
             }
             seatsArr = seatsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
             seatNumberMap = {};
@@ -316,7 +372,8 @@
                 const order = doc.data();
                 if (order.items) {
                     order.items.forEach(item => {
-                        if (item.selectedSeats) {
+                        // רק אם המוצר הוא האירוע הנוכחי (למזהים תואמים)
+                        if (item.productId && item.productId === eventId && item.selectedSeats) {
                             item.selectedSeats.forEach(seatNumOrObj => {
                                 let seatId = seatNumOrObj.id ? String(seatNumOrObj.id) : String(seatNumOrObj);
                                 seatOrderMap[seatId] = {
@@ -331,11 +388,12 @@
             });
             renderStatsAndSeats();
         } catch (e) {
-            seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">שגיאה בטעינה</div>';
+            seatGrid.innerHTML = '<div style="grid-column:1/span 20;color:red;">שגיאה בטעינת הכיסאות או ההזמנות</div>';
             statsDiv.innerHTML = '';
             console.error('שגיאה בטעינת הכיסאות או ההזמנות:', e);
         }
     }
+
     function renderStatsAndSeats() {
         // חישוב סטטיסטיקות
         let bought = 0, held = 0, free = 0;
