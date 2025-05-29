@@ -677,8 +677,47 @@
         let currentProductForSeatSelection = null;
         let selectedSeatsForProduct = [];
         let allSeats = [];
-        let products = [];
-        const TOTAL_SEATS = 200;
+let products = [];
+
+function renderPayPalButton() {
+    // סכום כולל עגלה
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    document.getElementById('paypal-total-amount').innerText = total.toFixed(2);
+
+    // מנקה כפתור קודם אם היה
+    document.getElementById('paypal-button-container').innerHTML = "";
+
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: total.toFixed(2),
+                        currency_code: 'ILS'
+                    },
+                    description: cart.map(item => `${item.name} x${item.quantity}`).join(', ')
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                alert('התשלום בוצע בהצלחה על ידי ' + details.payer.name.given_name + '!');
+                // כאן אפשר לרוקן את העגלה ולעדכן ממשק
+                cart = [];
+                updateCartDisplay();
+                checkoutModal.style.display = 'none';
+            });
+        },
+        onCancel: function(data) {
+            alert('התשלום בוטל.');
+        },
+        onError: function(err) {
+            alert('אירעה שגיאה בתהליך התשלום. אנא נסה שוב מאוחר יותר.');
+        }
+    }).render('#paypal-button-container');
+}
+
+const TOTAL_SEATS = 200;
         const SEATS_PER_ROW = 20;
         const STAGE_ROW = 0;
 
