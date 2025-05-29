@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הרצאות והופעות - בית מילר</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎤</text></svg>">
+    <link href="https://fonts.googleapis.com/css?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Heebo', Arial, sans-serif;
+            margin: 0;
+            background: #f4f4f4;
+            color: #333;
+            direction: rtl;
+            overflow-x: hidden;
+        }
+        header {
+            background: #222;
+            color: #fff;
+            padding: 2em 0 1em 0;
+            text-align: center;
+            font-size: 2.2em;
+            letter-spacing: 4px;
+            border-bottom-left-radius: 16% 8%;
+            border-bottom-right-radius: 16% 8%;
+            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.12);
+        }
+        #cart-toggle-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 16px 6px 16px 6px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px 0 rgba(0,0,0,0.12);
+            z-index: 1001;
+            transition: background 0.2s, transform 0.2s;
+        }
+        #cart-toggle-button:hover {
+            background: #0056b3;
+            transform: scale(1.04) rotate(-1deg);
+        }
+        main#products-container {
+            padding: 40px 6vw 0 6vw;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+        .product-card {
+            background: #fff;
+            border-radius: 24px 24px 14px 14px;
+            box-shadow: 0 3px 12px 0 rgba(52, 52, 90, 0.13);
+            padding: 20px 10px 15px 10px;
+            text-align: center;
+            transition: transform 0.18s, box-shadow 0.18s;
+            border: 1.5px solid #e1e1e1;
+        }
+        .product-card:hover {
+            transform: scale(1.03) rotate(-1deg);
+            box-shadow: 0 8px 28px 0 rgba(52,52,90,0.16);
+            border-color: #007bff;
+        }
+        .product-card img {
+            max-width: 98%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 22px;
+            margin-bottom: 13px;
+            border: 3px solid #f1f1f1;
+            box-shadow: 0 1px 8px 0 rgba(90,90,130,0.09);
+            transition: filter 0.2s;
+        }
+        .product-card img:hover {
+            filter: brightness(1.09) saturate(1.05) drop-shadow(0 2px 7px #007bff33);
+        }
+        .product-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.3em;
+            color: #007bff;
+        }
+        .product-card .price {
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 9px;
+            font-size: 1.12em;
+        }
+        .product-card button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            box-shadow: 0 1px 4px 0 rgba(52,52,90,0.08);
+            transition: background 0.18s, transform 0.13s;
+        }
+        .product-card button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+        #cart-container {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: #fff;
+            border: 2px solid #d1eaff;
+            border-radius: 20px;
+            padding: 16px 14px 20px 14px;
+            box-shadow: 0 2px 18px 0 rgba(0,0,0,0.11);
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 370px;
+            display: none;
+            z-index: 1000;
+            transition: box-shadow 0.2s;
+        }
+        #cart-container:active, #cart-container:focus-within {
+            box-shadow: 0 4px 24px 0 #007bff33;
+        }
+        #cart h2 {
+            margin: 0 0 13px 0;
+            font-size: 1.3em;
+            color: #007bff;
+        }
+        #cart ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #cart li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 10px 0;
+            border-bottom: 1px solid #e2e2e2;
+            font-size: 1.06em;
+            gap: 4px;
+        }
+        #cart li:last-child {
+            border-bottom: none;
+        }
+        .cart-item-details {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+        .cart-item-details img {
+            width: 44px;
+            height: 44px;
+            margin-left: 10px;
+            border-radius: 12px;
+            border: 2px solid #e5e5ff;
+            object-fit: cover;
+            box-shadow: 0 1px 6px 0 #7fb7ff22;
+        }
+        .cart-item-info {
+            flex-grow: 1;
+            text-align: right;
+            font-size: 1em;
+            min-width: 0;
+        }
+        .cart-item-info span {
+            display: block;
+            margin-bottom: 0.2em;
+            word-break: break-word;
+        }
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .cart-item-quantity button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 5px 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin: 0 2px;
+            transition: background 0.17s;
+        }
+        .cart-item-quantity button:hover {
+            background: #0056b3;
+        }
+        #cart .total {
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: right;
+            font-size: 1.13em;
+            color: #007bff;
+        }
+        #checkout-button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 11px 19px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.08em;
+            width: 98%;
+            margin-top: 16px;
+            font-weight: bold;
+            transition: background 0.18s, transform 0.12s;
+        }
+        #checkout-button:disabled {
+            background: #ccc;
+            color: #888;
+            cursor: not-allowed;
+        }
+        #checkout-button:hover:not(:disabled) {
+            background: #0056b3;
+            transform: scale(1.04);
+        }
+        #checkout-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(151, 195, 255, 0.22);
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+            backdrop-filter: blur(2.5px);
+        }
+        #checkout-form {
+            background: #fff;
+            padding: 20px 14px 22px 14px;
+            border-radius: 18px;
+            width: 90%;
+            max-width: 450px;
+            position: relative;
+            box-shadow: 0 3px 20px 0 #007bff22;
+        }
+        #checkout-form h2 {
+            text-align: center;
+            margin-bottom: 16px;
+            color: #007bff;
+        }
+        .form-group {
+            margin-bottom: 13px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group input[type="number"] {
+            width: calc(100% - 12px);
+            padding: 7px 6px;
+            border: 1.5px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+            background: #f8faff;
+            color: #232323;
+            transition: border 0.15s;
+        }
+        .form-group input:focus {
+            border: 1.5px solid #007bff;
+            outline: none;
+        }
+        .form-actions {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .form-actions button {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 13px;
+            cursor: pointer;
+            font-size: 1.07em;
+            margin: 0 8px;
+            font-weight: bold;
+            transition: background 0.16s, transform 0.11s;
+        }
+        .form-actions button:hover {
+            background: #218838;
+            transform: scale(1.03);
+        }
+        .close-modal-button {
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            position: absolute;
+            top: 11px;
+            left: 11px;
+            color: #007bff;
+            transition: color 0.14s;
+        }
+        .close-modal-button:hover {
+            color: #28a745;
+        }
+        #seat-selection-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.06);
+            justify-content: center;
+            align-items: center;
+            z-index: 1003;
+            backdrop-filter: blur(2.5px);
+        }
+        .seat-selection-content {
+            background: #fff;
+            padding: 24px 18px 24px 18px;
+            border-radius: 20px;
+            width: 96%;
+            max-width: 700px;
+            position: relative;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 3px 24px 0 #22222222;
+        }
+        .seat-selection-content h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            gap: 6px;
+            margin-bottom: 18px;
+            justify-items: center;
+            position: relative;
+            background: transparent;
+        }
+        .seat {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.93em;
+            color: #fff;
+            font-weight: bold;
+            border: 2px solid #fff;
+            transition: background 0.2s, transform 0.13s, border 0.15s;
+            user-select: none;
+        }
+        .seat.selected {
+            background: #28a745;
+            border: 2px solid #28a745;
+            transform: scale(1.13);
+        }
+        .seat.unavailable {
+            background: #dc3545;
+            cursor: not-allowed;
+            opacity: 0.5;
+            border: 2px solid #aaa;
+        }
+        .seat-info {
+            text-align: right;
+            margin-top: 13px;
+            font-size: 1.03em;
+        }
+        .seat-info span {
+            display: inline-block;
+            margin-left: 15px;
+            font-weight: bold;
+            color: #333;
+            letter-spacing: 1.2px;
+        }
+        .seat-info .legend-selected {
+            background: #28a745;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+            border: 2px solid #28a745;
+        }
+        .seat-info .legend-available {
+            background: #ccc;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+            border: 2px solid #fff;
+        }
+        .seat-info .legend-unavailable {
+            background: #dc3545;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 5px;
+            border: 2px solid #dc3545;
+        }
+        .stage {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 18px 0 13px 0;
+        }
+        .stage-rect {
+            background: #333;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 11px;
+            padding: 8px 60px;
+            font-size: 1.17em;
+            box-shadow: 0 2px 10px 0 #4443;
+            text-align: center;
+            border: 3px solid #007bff;
+            letter-spacing: 1.5px;
+        }
+        #confirm-seats-button {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.12em;
+            margin-top: 11px;
+            font-weight: bold;
+            transition: background 0.15s, transform 0.11s;
+        }
+        #confirm-seats-button:hover {
+            background: #218838;
+            transform: scale(1.04);
+        }
+        #redirect-message {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #007bff;
+            color: #fff;
+            padding: 28px;
+            border-radius: 19px;
+            font-size: 1.15em;
+            z-index: 1000;
+            letter-spacing: 1.2px;
+            font-weight: bold;
+            text-shadow: 1px 1px 7px #22222244;
+            box-shadow: 0 2px 18px 0 #2222;
+        }
+        /* START: Product Modal Styles */
+        #product-modal {
+            display: none;
+            position: fixed;
+            top: 0; right: 0; left: 0; bottom: 0;
+            background: rgba(56, 56, 80, 0.22);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        #product-modal .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 32px 0 #007bff22;
+            display: flex;
+            flex-direction: row;
+            max-width: 520px;
+            width: 95vw;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        #product-modal .modal-image {
+            flex: 1.2;
+            background: #f6faff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+        #product-modal .modal-image img {
+            max-width: 97%;
+            max-height: 320px;
+            border-radius: 0 0 0 20px;
+            object-fit: contain;
+        }
+        #product-modal .modal-details {
+            flex: 2.2;
+            padding: 24px 16px 18px 16px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        #product-modal .close-product-modal {
+            position: absolute;
+            top: 11px;
+            left: 11px;
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #007bff;
+            cursor: pointer;
+            z-index: 5;
+            transition: color 0.14s;
+        }
+        #product-modal .close-product-modal:hover {
+            color: #dc3545;
+        }
+        #product-modal .modal-details h2 {
+            margin: 0 0 7px 0;
+            color: #007bff;
+            font-size: 1.32em;
+            white-space: pre-line;
+        }
+        #product-modal .modal-details .price {
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.08em;
+            margin-bottom: 8px;
+        }
+        #product-modal .modal-details .description {
+            color: #333;
+            font-size: 1.05em;
+            margin-bottom: 0;
+            white-space: pre-line;
+        }
+        @media (max-width: 600px) {
+            #product-modal .modal-content {
+                flex-direction: column;
+                max-width: 97vw;
+                padding: 0;
+            }
+            #product-modal .modal-image img {
+                max-height: 200px;
+                border-radius: 20px 20px 0 0;
+            }
+        }
+        /* END: Product Modal Styles */
+        @media (max-width: 800px) {
+            main#products-container {
+                grid-template-columns: 1fr;
+                padding: 24px 2vw 0 2vw;
+            }
+            #cart-container { width: 97vw; left: 1vw; }
+            .stage-rect { padding: 4px 12vw; font-size: 1em;}
+        }
+        #paypal-button-container {
+            margin-top: 24px;
+            min-height: 50px;
+        }
+        .paypal-note {
+            background: #e0f7fa;
+            border-right: 4px solid #00bcd4;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 0.92em;
+            color: #006064;
+            text-align: right;
+            border-radius: 6px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <header>
+        <img src="https://i.postimg.cc/ydWK80t5/Miller-logos-10.png" alt="לוגו" width="300" height="auto">
+        <h1>אירועים בבית פאני קפלן - בית מילר</h1>
+    </header>
+    <button id="cart-toggle-button">הצג/הסתר עגלת קניות</button>
+    <main id="products-container"></main>
+    <div id="cart-container">
+        <div id="cart">
+            <h2>עגלת קניות</h2>
+            <ul id="cart-items"></ul>
+            <div class="total">סה"כ: <span id="cart-total">0.00</span> ₪</div>
+            <button id="checkout-button">מעבר לתשלום</button>
+        </div>
+    </div>
+    <div id="checkout-modal">
+        <form id="checkout-form">
+            <button type="button" class="close-modal-button">&times;</button>
+            <h2>פרטי תשלום</h2>
+            <div class="form-group">
+                <label for="name">שם מלא:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">אימייל:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">טלפון:</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            <div class="form-group">
+                <label for="address">כתובת:</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <!-- HERE IS THE PAYPAL BUTTON INSTEAD OF CREDIT CARD FIELDS -->
+            <div id="paypal-button-container"></div>
+            <div class="paypal-note">
+                <b>לתשומת לבך:</b> התשלום מתבצע באמצעות PayPal. לאחר התשלום, תקבל קבלה לאימייל שהזנת.
+            </div>
+        </form>
+    </div>
+    <div id="seat-selection-modal">
+        <div class="seat-selection-content">
+            <button type="button" class="close-modal-button">&times;</button>
+            <h2>בחירת מקומות</h2>
+            <div class="seats-grid" id="seats-grid"></div>
+            <div class="seat-info">
+                <span class="legend-selected"></span> מקום נבחר
+                <span class="legend-available"></span> מקום פנוי
+                <span class="legend-unavailable"></span> מקום תפוס
+            </div>
+            <div class="form-actions">
+                <button id="confirm-seats-button">אישור מקומות</button>
+            </div>
+        </div>
+    </div>
+    <div id="redirect-message">
+        מוזמנים לראות את שאר התוכנית שבית מילר מציעים...
+    </div>
+    <!-- Product Details Modal -->
+    <div id="product-modal">
+        <div class="modal-content">
+            <button class="close-product-modal" type="button">&times;</button>
+            <div class="modal-image">
+                <img src="" alt="אירוע" id="modal-product-image">
+            </div>
+            <div class="modal-details">
+                <h2 id="modal-product-title"></h2>
+                <div class="price" id="modal-product-price"></div>
+                <div class="description" id="modal-product-description"></div>
+                <button id="modal-add-to-cart" style="margin-top: 18px; background: #007bff; color: #fff; border: none; padding: 10px 22px; border-radius: 16px; cursor: pointer; font-size: 1em; font-weight:bold;">
+                    הוסף לעגלה
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="https://www.paypal.com/sdk/js?client-id=AZGFbYTdHsMPlQoJYVYjCjUUKeB83lfi1k5AuDZD_70sr7yHE8Ac247Cv3efDssNxt9g-qNY_uWe54ea&currency=ILS"></script>
+    <script>
+        // .... כל הקוד שלך עד checkoutButton.addEventListener ... 
+        // (כולל בחירת כיסאות, עגלת קניות, firebase וכו' - בלי שום שינוי)
+
+        // ========== PayPal במקום אשראי ==========
+        function getCartSummaryForPaypal() {
+            // רשימת מוצרים לפי PayPal API
+            return cart.map(item => ({
+                name: item.name,
+                unit_amount: {
+                    currency_code: 'ILS',
+                    value: item.price.toFixed(2)
+                },
+                quantity: item.quantity
+            }));
+        }
+        function getCartTotal() {
+            return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+        }
+
+        // כאשר פותחים את המודאל של התשלום, יוצרים את כפתור פייפאל עם הפרטים (לא מייצרים אותו פעמיים)
+        let paypalButtonRendered = false;
+        checkoutButton.addEventListener('click', () => {
+            if (cart.length > 0) {
+                checkoutModal.style.display = 'flex';
+                if (!paypalButtonRendered) {
+                    paypal.Buttons({
+                        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal' },
+                        createOrder: function(data, actions) {
+                            // קבלת פרטי המשתמש
+                            const name = document.getElementById('name').value;
+                            const email = document.getElementById('email').value;
+                            const phone = document.getElementById('phone').value;
+                            const address = document.getElementById('address').value;
+                            // סכום ותכולה
+                            const items = getCartSummaryForPaypal();
+                            const total = getCartTotal();
+                            // חייבים purchase_units
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: total,
+                                        currency_code: 'ILS',
+                                        breakdown: { item_total: { value: total, currency_code: 'ILS' } }
+                                    },
+                                    items: items,
+                                    description: 'הזמנה בבית מילר',
+                                    shipping: {
+                                        name: { full_name: name },
+                                        address: { address_line_1: address, admin_area_1: '', admin_area_2: '', postal_code: '', country_code: 'IL' }
+                                    }
+                                }],
+                                payer: { name: { given_name: name }, email_address: email }
+                            });
+                        },
+                        onApprove: function(data, actions) {
+                            return actions.order.capture().then(function(details) {
+                                alert('התשלום בוצע בהצלחה על ידי ' + details.payer.name.given_name + '!');
+                                cart = [];
+                                updateCartDisplay();
+                                checkoutModal.style.display = 'none';
+                            });
+                        },
+                        onCancel: function(data) {
+                            alert('התשלום בוטל.');
+                        },
+                        onError: function(err) {
+                            console.error('שגיאת PayPal', err);
+                            alert('אירעה שגיאה בתהליך התשלום. אנא נסה שוב מאוחר יותר.');
+                        }
+                    }).render('#paypal-button-container');
+                    paypalButtonRendered = true;
+                }
+            } else {
+                alert('העגלה ריקה, לא ניתן לבצע תשלום.');
+            }
+        });
+
+        // סגירת מודאל תשלום/בחירת מושבים
+        document.querySelectorAll('.close-modal-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                checkoutModal.style.display = 'none';
+                seatSelectionModal.style.display = 'none';
+                selectedSeatsForProduct = [];
+            });
+        });
+
+        // ... המשך כל הסקריפט שלך בדיוק כמו שהיה ...
+    </script>
+</body>
+</html>
