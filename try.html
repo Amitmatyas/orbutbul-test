@@ -549,18 +549,18 @@
                 border-radius: 20px 20px 0 0;
             }
         }
-        /* END: Product Modal Styles */
-        @media (max-width: 800px) {
-            main#products-container {
-                grid-template-columns: 1fr;
-                padding: 24px 2vw 0 2vw;
-            }
-            #cart-container { width: 97vw; left: 1vw; }
-            .stage-rect { padding: 4px 12vw; font-size: 1em;}
+    /* END: Product Modal Styles */
+    @media (max-width: 800px) {
+        main#products-container {
+            grid-template-columns: 1fr;
+            padding: 24px 2vw 0 2vw;
         }
-    </style>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+        #cart-container { width: 97vw; left: 1vw; }
+        .stage-rect { padding: 4px 12vw; font-size: 1em;}
+    }
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <header>
@@ -577,76 +577,82 @@
             <button id="checkout-button">מעבר לתשלום</button>
         </div>
     </div>
-<div id="checkout-modal">
-    <form id="checkout-form">
-        <button type="button" class="close-modal-button">&times;</button>
-        <h2>פרטי תשלום</h2>
-        <div class="form-group">
-            <label for="name">שם מלא:</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        <div class="form-group">
-            <label for="email">אימייל:</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <div class="form-group">
-            <label for="phone">טלפון:</label>
-            <input type="tel" id="phone" name="phone">
-        </div>
-        <div class="form-group">
-            <label for="address">כתובת:</label>
-            <input type="text" id="address" name="address" required>
-        </div>
-        <!-- כפתור תשלום PayPal לפי total -->
-        <div id="paypal-button-container"></div>
-        <button type="button" class="close-modal-button" style="position:initial; float:left; margin-top:14px;">ביטול</button>
-    </form>
-</div>
-<script src="https://www.paypal.com/sdk/js?client-id=AZGFbYTdHsMPlQoJYVYjCjUUKeB83lfi1k5AuDZD_70sr7yHE8Ac247Cv3efDssNxt9g-qNY_uWe54ea&currency=ILS"></script>
-<script>
-function renderPayPalButton() {
-    const payAmount = typeof total !== 'undefined' ? Number(total).toFixed(2) : '0.00';
-    const container = document.getElementById('paypal-button-container');
-    if (!container) return;
-    container.innerHTML = "";
-    paypal.Buttons({
-        style: {
-            color: 'blue',
-            shape: 'pill',
-            label: 'pay',
-            height: 40
-        },
-        createOrder: function(data, actions) {
-            if (Number(payAmount) <= 0) {
-                alert('לא ניתן לשלם סכום אפס/שלילי');
-                return actions.reject();
+    <div id="checkout-modal">
+        <form id="checkout-form">
+            <button type="button" class="close-modal-button">&times;</button>
+            <h2>פרטי תשלום</h2>
+            <div class="form-group">
+                <label for="name">שם מלא:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">אימייל:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">טלפון:</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            <div class="form-group">
+                <label for="address">כתובת:</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <!-- כפתור תשלום PayPal לפי total -->
+            <div id="paypal-button-container"></div>
+            <button type="button" class="close-modal-button" style="position:initial; float:left; margin-top:14px;">ביטול</button>
+        </form>
+    </div>
+    <script src="https://www.paypal.com/sdk/js?client-id=AZGFbYTdHsMPlQoJYVYjCjUUKeB83lfi1k5AuDZD_70sr7yHE8Ac247Cv3efDssNxt9g-qNY_uWe54ea&currency=ILS"></script>
+    <script>
+    function renderPayPalButton() {
+        // ודא ש-total קיים ומעודכן
+        const payAmount = typeof total !== 'undefined' ? Number(total).toFixed(2) : '0.00';
+        const container = document.getElementById('paypal-button-container');
+        if (!container) return;
+        container.innerHTML = "";
+        paypal.Buttons({
+            style: {
+                color: 'blue',
+                shape: 'pill',
+                label: 'pay',
+                height: 40
+            },
+            createOrder: function(data, actions) {
+                if (Number(payAmount) <= 0) {
+                    alert('לא ניתן לשלם סכום אפס/שלילי');
+                    return actions.reject();
+                }
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: payAmount,
+                            currency_code: 'ILS'
+                        },
+                        description: 'רכישה באתר'
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    // כאן מבצעים את ההשלמה במערכת אחרי תשלום בפייפאל
+                    completeOrderAfterPayPal();
+                });
+            },
+            onCancel: function(data) {
+                alert('התשלום בוטל.');
+            },
+            onError: function(err) {
+                alert('שגיאה בתשלום: נסה שוב.');
+                console.error(err);
             }
-            return actions.order.create({
-                purchase_units: [{
-                    amount: {
-                        value: payAmount,
-                        currency_code: 'ILS'
-                    },
-                    description: 'רכישה באתר'
-                }]
-            });
-        },
-        onApprove: function(data, actions) {
-            return actions.order.capture().then(function(details) {
-                // כאן מבצעים את ההשלמה במערכת אחרי תשלום בפייפאל
-                completeOrderAfterPayPal();
-            });
-        },
-        onCancel: function(data) {
-            alert('התשלום בוטל.');
-        },
-        onError: function(err) {
-            alert('שגיאה בתשלום: נסה שוב.');
-            console.error(err);
-        }
-    }).render('#paypal-button-container');
-}
-</script>
+        }).render('#paypal-button-container');
+    }
+
+    document.getElementById('checkout-button').addEventListener('click', function() {
+        // ודא שהמודל פתוח כאן
+        renderPayPalButton();
+    });
+    </script>
     <div id="seat-selection-modal">
         <div class="seat-selection-content">
             <button type="button" class="close-modal-button">&times;</button>
