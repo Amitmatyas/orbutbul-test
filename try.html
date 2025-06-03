@@ -461,7 +461,6 @@
             text-shadow: 1px 1px 7px #22222244;
             box-shadow: 0 2px 18px 0 #2222;
         }
-        /* START: Product Modal Styles */
         #product-modal {
             display: none;
             position: fixed;
@@ -549,18 +548,18 @@
                 border-radius: 20px 20px 0 0;
             }
         }
-    /* END: Product Modal Styles */
-    @media (max-width: 800px) {
-        main#products-container {
-            grid-template-columns: 1fr;
-            padding: 24px 2vw 0 2vw;
+        @media (max-width: 800px) {
+            main#products-container {
+                grid-template-columns: 1fr;
+                padding: 24px 2vw 0 2vw;
+            }
+            #cart-container { width: 97vw; left: 1vw; }
+            .stage-rect { padding: 4px 12vw; font-size: 1em;}
         }
-        #cart-container { width: 97vw; left: 1vw; }
-        .stage-rect { padding: 4px 12vw; font-size: 1em;}
-    }
-</style>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AZGFbYTdHsMPlQoJYVYjCjUUKeB83lfi1k5AuDZD_70sr7yHE8Ac247Cv3efDssNxt9g-qNY_uWe54ea&currency=ILS"></script>
 </head>
 <body>
     <header>
@@ -597,59 +596,12 @@
                 <label for="address">כתובת:</label>
                 <input type="text" id="address" name="address" required>
             </div>
-            <!-- כפתור תשלום PayPal לפי total -->
-<div id="paypal-button-container"></div>
-
-<!-- טען את ה-SDK של PayPal פעם אחת בלבד! -->
-<script src="https://www.paypal.com/sdk/js?client-id=AZGFbYTdHsMPlQoJYVYjCjUUKeB83lfi1k5AuDZD_70sr7yHE8Ac247Cv3efDssNxt9g-qNY_uWe54ea&currency=ILS"></script>
-<script>
-let total = 0; // זהו המשתנה הגלובלי שבו נשמר הסכום הסופי של העגלה
-
-// פונקציה שמרנדרת את כפתור PayPal עם הסכום המעודכן
-function renderPayPalButton() {
-    const container = document.getElementById('paypal-button-container');
-    if (!container) return;
-    container.innerHTML = ""; // מנקה כפתור קודם אם היה
-
-    paypal.Buttons({
-        style: {
-            color: 'blue',
-            shape: 'pill',
-            label: 'pay',
-            height: 40
-        },
-        createOrder: function(data, actions) {
-            return actions.order.create({
-                purchase_units: [{
-                    amount: {
-                        value: total.toFixed(2), // משתמש ישירות ב-total
-                        currency_code: 'ILS'
-                    },
-                    description: 'רכישה באתר'
-                }]
-            });
-        },
-        onApprove: function(data, actions) {
-            return actions.order.capture().then(function(details) {
-                // כאן מבצעים את ההשלמה במערכת אחרי תשלום בפייפאל
-                completeOrderAfterPayPal();
-            });
-        },
-        onCancel: function(data) {
-            alert('התשלום בוטל.');
-        },
-        onError: function(err) {
-            alert('שגיאה בתשלום: נסה שוב.');
-            console.error(err);
-        }
-    }).render('#paypal-button-container');
-}
-
-// קריאה לפונקציה כשפותחים את מודל התשלום
-document.getElementById('checkout-button').addEventListener('click', function() {
-    renderPayPalButton();
-});
-</script>
+            <div class="form-group">
+                <div id="paypal-button-container"></div>
+            </div>
+            <button type="button" class="close-modal-button" style="position: initial; float: left; margin-top: 14px;">ביטול</button>
+        </form>
+    </div>
     <div id="seat-selection-modal">
         <div class="seat-selection-content">
             <button type="button" class="close-modal-button">&times;</button>
@@ -668,7 +620,6 @@ document.getElementById('checkout-button').addEventListener('click', function() 
     <div id="redirect-message">
         מוזמנים לראות את שאר התוכנית שבית מילר מציעים...
     </div>
-    <!-- Product Details Modal -->
     <div id="product-modal">
         <div class="modal-content">
             <button class="close-product-modal" type="button">&times;</button>
@@ -710,7 +661,6 @@ document.getElementById('checkout-button').addEventListener('click', function() 
         const seatSelectionModal = document.getElementById('seat-selection-modal');
         const seatsGrid = document.getElementById('seats-grid');
         const confirmSeatsButton = document.getElementById('confirm-seats-button');
-        // Modal elements
         const productModal = document.getElementById('product-modal');
         const modalProductImage = document.getElementById('modal-product-image');
         const modalProductTitle = document.getElementById('modal-product-title');
@@ -725,8 +675,7 @@ document.getElementById('checkout-button').addEventListener('click', function() 
         const TOTAL_SEATS = 200;
         const SEATS_PER_ROW = 20;
         const STAGE_ROW = 0;
-
-        // לכל מופע תת-קולקציה seats
+        let total = 0;
         async function initializeAllSeatsAsAvailableForProduct(productId) {
             const seatsRef = db.collection('products').doc(productId).collection('seats');
             const batch = db.batch();
@@ -742,20 +691,16 @@ document.getElementById('checkout-button').addEventListener('click', function() 
                 catch (error) { console.error("Error initializing seats: ", error); }
             }
         }
-
         async function fetchProducts() {
             try {
                 const productsSnapshot = await db.collection('products').get();
                 products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // לכל מופע שאין לו מושבים - נאתחל
                 for (const product of products) {
                     await initializeAllSeatsAsAvailableForProduct(product.id);
                 }
                 renderProducts();
             } catch (error) { alert("שגיאה בטעינת אירועים."); }
         }
-
-        // החזקת מקומות לפי אירוע
         async function releaseExpiredHolds(productId) {
             const now = Date.now();
             const seatsSnapshot = await db.collection('products').doc(productId).collection('seats')
@@ -776,8 +721,6 @@ document.getElementById('checkout-button').addEventListener('click', function() 
             });
             if (!seatsSnapshot.empty) await batch.commit();
         }
-
-        // טעינת מושבים לפי מופע
         async function fetchSeats(productId) {
             await releaseExpiredHolds(productId);
             try {
@@ -786,7 +729,6 @@ document.getElementById('checkout-button').addEventListener('click', function() 
                 allSeats.sort((a, b) => a.number - b.number);
             } catch (error) { alert("שגיאה בטעינת סטטוס מקומות."); }
         }
-
         async function holdSeatsTemporarily(productId, seatIds) {
             const seatsRef = db.collection('products').doc(productId).collection('seats');
             const batch = db.batch();
@@ -853,7 +795,7 @@ document.getElementById('checkout-button').addEventListener('click', function() 
         }
         function updateCartDisplay() {
             cartItemsList.innerHTML = '';
-            let total = 0;
+            total = 0;
             cart.forEach(item => {
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `
@@ -1023,6 +965,7 @@ document.getElementById('checkout-button').addEventListener('click', function() 
         checkoutButton.addEventListener('click', () => {
             if (cart.length > 0) {
                 checkoutModal.style.display = 'flex';
+                renderPayPalButton();
             } else {
                 alert('העגלה ריקה, לא ניתן לבצע תשלום.');
             }
@@ -1036,48 +979,7 @@ document.getElementById('checkout-button').addEventListener('click', function() 
         });
         checkoutForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const phone = document.getElementById('phone').value;
-            const address = document.getElementById('address').value;
-            try {
-                for (const item of cart) {
-                    if (item.selectedSeats && item.selectedSeats.length > 0) {
-                        await markSeatsAsPaid(item.id, item.selectedSeats.map(s => s.id));
-                    }
-                }
-                await db.collection('orders').add({
-                    customerName: name,
-                    customerEmail: email,
-                    customerPhone: phone,
-                    customerAddress: address,
-                    items: cart.map(item => ({
-                        productId: item.id,
-                        productName: item.name,
-                        quantity: item.quantity,
-                        price: item.price,
-                        selectedSeats: item.selectedSeats ? item.selectedSeats.map(s => s.number) : []
-                    })),
-                    totalAmount: parseFloat(cartTotalElement.textContent),
-                    orderDate: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'completed'
-                });
-                alert(`תודה לך, ${name}! הזמנתך התקבלה בהצלחה.\nסך הכל לתשלום: ${cartTotalElement.textContent}`);
-                cart = [];
-                updateCartDisplay();
-                checkoutModal.style.display = 'none';
-                checkoutForm.reset();
-                redirectMessage.style.display = 'block';
-                setTimeout(() => {
-                    window.location.href = 'https://bmiller.co.il';
-                }, 3000);
-            } catch (error) {
-                alert("אירעה שגיאה בתהליך התשלום. נסה שוב.");
-                if (currentProductForSeatSelection) {
-                    await fetchSeats(currentProductForSeatSelection.id);
-                    renderSeats();
-                }
-            }
+            // תשלום מתבצע רק דרך PayPal, לא דרך שליחה רגילה
         });
         cartToggleButton.addEventListener('click', () => {
             if (cartContainer.style.display === 'none') {
@@ -1103,19 +1005,15 @@ document.getElementById('checkout-button').addEventListener('click', function() 
             }
             seatSelectionModal.style.display = 'none';
         });
-        // כל דקה נריץ releaseExpiredHolds לכל אירוע
         setInterval(() => {
             products.forEach(product => releaseExpiredHolds(product.id));
         }, 60 * 1000);
-
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchProducts();
             updateCartDisplay();
         });
-        // משתנה גלובלי לשמירת מזהה המוצר של המודל
         const modalAddToCartBtn = document.getElementById('modal-add-to-cart');
         let currentModalProductId = null;
-        // עדכון מזהה המוצר בעת פתיחת המודל
         function openProductModal(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
@@ -1145,6 +1043,86 @@ document.getElementById('checkout-button').addEventListener('click', function() 
                 closeProductModal();
             }
         });
+        // PayPal Integration
+        function renderPayPalButton() {
+            const container = document.getElementById('paypal-button-container');
+            if (!container) return;
+            container.innerHTML = "";
+            paypal.Buttons({
+                style: {
+                    color: 'blue',
+                    shape: 'pill',
+                    label: 'pay',
+                    height: 40
+                },
+                createOrder: function(data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: total.toFixed(2),
+                                currency_code: 'ILS'
+                            },
+                            description: 'רכישה באתר בית מילר'
+                        }]
+                    });
+                },
+                onApprove: function(data, actions) {
+                    return actions.order.capture().then(async function(details) {
+                        try {
+                            const name = document.getElementById('name').value;
+                            const email = document.getElementById('email').value;
+                            const phone = document.getElementById('phone').value;
+                            const address = document.getElementById('address').value;
+                            for (const item of cart) {
+                                if (item.selectedSeats && item.selectedSeats.length > 0) {
+                                    await markSeatsAsPaid(item.id, item.selectedSeats.map(s => s.id));
+                                }
+                            }
+                            await db.collection('orders').add({
+                                customerName: name,
+                                customerEmail: email,
+                                customerPhone: phone,
+                                customerAddress: address,
+                                items: cart.map(item => ({
+                                    productId: item.id,
+                                    productName: item.name,
+                                    quantity: item.quantity,
+                                    price: item.price,
+                                    selectedSeats: item.selectedSeats ? item.selectedSeats.map(s => s.number) : []
+                                })),
+                                totalAmount: parseFloat(total.toFixed(2)),
+                                orderDate: firebase.firestore.FieldValue.serverTimestamp(),
+                                status: 'completed',
+                                paymentType: 'paypal',
+                                paypalOrderId: details.id
+                            });
+                            alert(`תודה לך, ${name}! התשלום בפייפאל בוצע בהצלחה.\nסך הכל לתשלום: ${total.toFixed(2)} ₪`);
+                            cart = [];
+                            updateCartDisplay();
+                            checkoutModal.style.display = 'none';
+                            checkoutForm.reset();
+                            redirectMessage.style.display = 'block';
+                            setTimeout(() => {
+                                window.location.href = 'https://bmiller.co.il';
+                            }, 3000);
+                        } catch (error) {
+                            alert("אירעה שגיאה בתהליך התשלום. נסה שוב.");
+                            if (currentProductForSeatSelection) {
+                                await fetchSeats(currentProductForSeatSelection.id);
+                                renderSeats();
+                            }
+                        }
+                    });
+                },
+                onCancel: function(data) {
+                    alert('התשלום בוטל.');
+                },
+                onError: function(err) {
+                    alert('שגיאה בתשלום: נסה שוב.');
+                    console.error(err);
+                }
+            }).render('#paypal-button-container');
+        }
     </script>
 </body>
 </html>
