@@ -292,17 +292,20 @@
             background: #218838;
             transform: scale(1.03);
         }
-        .close-modal-button {
-            background: none;
-            border: none;
-            font-size: 2em;
-            cursor: pointer;
-            position: absolute;
-            top: 11px;
-            left: 11px;
-            color: #007bff;
-            transition: color 0.14s;
-        }
+.close-modal-button {
+    background-color: #f0f0f0; /* דוגמה לצבע רקע */
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    position: absolute;
+    top: 11px;
+    right: 11px; /* שינוי מ-left ל-right */
+    color: #007bff;
+    transition: color 0.14s, background-color 0.14s; /* הוספת מעבר גם לרקע */
+    font-family: 'Heebo Black', sans-serif; /* הגדרת פונט Heebo Black */
+    padding: 5px 10px; /* הוספת ריווח פנימי לכפתור */
+    border-radius: 5px; /* פינות מעוגלות לכפתור */
+}
         .close-modal-button:hover {
             color: #28a745;
         }
