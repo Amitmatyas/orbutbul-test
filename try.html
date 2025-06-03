@@ -293,22 +293,26 @@
             transform: scale(1.03);
         }
 .close-modal-button {
-    background-color: #f0f0f0; /* דוגמה לצבע רקע */
-    border: none;
-    font-size: 2em;
-    cursor: pointer;
-    position: absolute;
-    top: 11px;
-    right: 11px; /* שינוי מ-left ל-right */
-    color: #007bff;
-    transition: color 0.14s, background-color 0.14s; /* הוספת מעבר גם לרקע */
-    font-family: 'Heebo Black', sans-serif; /* הגדרת פונט Heebo Black */
-    padding: 5px 10px; /* הוספת ריווח פנימי לכפתור */
-    border-radius: 5px; /* פינות מעוגלות לכפתור */
+    background-color: #f0f0f0; /* צבע רקע בהיר לכפתור */
+    border: none; /* ללא מסגרת */
+    font-size: 2em; /* גודל פונט גדול */
+    cursor: pointer; /* סמן עכבר בצורת יד */
+    position: absolute; /* מיקום אבסולוטי (יש לוודא שהאלמנט ההורה הוא עם position: relative/absolute) */
+    top: 11px; /* 11 פיקסלים מהקצה העליון */
+    right: 11px; /* 11 פיקסלים מהקצה הימני */
+    color: #007bff; /* צבע טקסט כחול */
+    transition: color 0.14s, background-color 0.14s; /* אנימציית מעבר חלקה לצבע ולרקע */
+    font-family: 'Heebo', sans-serif; /* הפונט Heebo */
+    font-weight: 900; /* הגדרת משקל Black (900) באופן מפורש */
+    padding: 5px 10px; /* ריווח פנימי לכפתור */
+    border-radius: 5px; /* פינות מעוגלות עדינות */
 }
-        .close-modal-button:hover {
-            color: #28a745;
-        }
+
+/* אפקט ריחוף (hover) על הכפתור */
+.close-modal-button:hover {
+    color: #0056b3; /* צבע טקסט כהה יותר בריחוף */
+    background-color: #e0e0e0; /* רקע כהה יותר בריחוף */
+}
         #seat-selection-modal {
             display: none;
             position: fixed;
